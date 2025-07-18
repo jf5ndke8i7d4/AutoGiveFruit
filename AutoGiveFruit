@@ -61,9 +61,9 @@ while wait(1) do
 			if Item_player:FindFirstChild("TimeGet") then
 				local TimeGet = Item_player:FindFirstChild("TimeGet")
 				if not WhoTakeFolder:FindFirstChild(Item_player.Name) then
-					if TimeGet.Value >= TickGet then
+					if TickGet >= TimeGet.Value then
 						local WantChar = Item_player.Character
-						local HumanoidRootPart = WantChar:FindFirstChild("HumanoidRootPart")
+						local HumanoidRootPart = WantChar:wa("HumanoidRootPart")
 						
 						local WhoTake = Instance.new("RayValue", WhoTakeFolder)
 						WhoTake.Name = Item_player.Name
