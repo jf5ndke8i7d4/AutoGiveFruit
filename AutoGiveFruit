@@ -1,0 +1,111 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+
+local player = game.Players.LocalPlayer
+local character = player.Character
+local humanoid = character:FindFirstChildOfClass("Humanoid")
+local HMNRT = character:FindFirstChild("HumanoidRootPart")
+local Camera = workspace.CurrentCamera
+local plrGui = player.PlayerGui
+
+local Intro_SCREEN = plrGui:WaitForChild("Intro_SCREEN")
+
+if Intro_SCREEN then
+	Intro_SCREEN.Enabled = false
+end
+
+local WhoTakeFolder = Instance.new("Folder", ReplicatedStorage)
+WhoTakeFolder.Name = "WhoTakeFolder"
+
+local TickGet = 0
+
+task.spawn(function()
+	while wait(1) do
+		TickGet = TickGet + 1
+	end
+end)
+
+task.spawn(function()
+	while wait(1) do
+		for _, Item_player in ipairs(Players:GetChildren()) do
+			if Item_player ~= player then
+				if not Item_player:FindFirstChild("TimeGet") then
+					local WhoTick = Instance.new("IntValue", Item_player)
+					WhoTick.Name = "TimeGet"
+					WhoTick.Value = TickGet + 10
+				end
+			end
+		end
+	end
+end)
+
+local function matchesAllowedKeyword(value, allowedKeywords)
+	value = value:lower()
+	for _, keyword in ipairs(allowedKeywords) do
+		if string.find(value, keyword:lower()) then
+			return true
+		end
+	end
+	return false
+end
+
+game:GetService("StarterGui"):SetCore("SendNotification", {
+	Title = "Welcome",
+	Text = "Auto Give Fruit",
+	Duration = 5
+})
+
+while wait(1) do
+	for _, Item_player in ipairs(Players:GetChildren()) do
+		if Item_player ~= player then
+			if Item_player:FindFirstChild("TimeGet") then
+				local TimeGet = Item_player:FindFirstChild("TimeGet")
+				if not WhoTakeFolder:FindFirstChild(Item_player.Name) then
+					if TimeGet.Value >= TickGet then
+						local WantChar = Item_player.Character
+						local HumanoidRootPart = WantChar:FindFirstChild("HumanoidRootPart")
+						
+						local WhoTake = Instance.new("RayValue", WhoTakeFolder)
+						WhoTake.Name = Item_player.Name
+						
+						local Take_Count = 0
+						
+						repeat
+							HMNRT.CFrame = HumanoidRootPart.CFrame
+							local Prox = HumanoidRootPart:FindFirstChildOfClass("ProximityPrompt")							
+							local Fruit_Count = false
+							
+							repeat
+								for _, Fruit in ipairs(player.Backpack:GetChildren()) do
+									if Fruit:IsA("Tool") and matchesAllowedKeyword(Fruit.Name, {"kg"}) and Fruit_Count == false then
+										Fruit.Parent = character
+										Fruit_Count = true
+									end
+								end
+								wait(0.5)
+							until character:FindFirstChildOfClass("Tool")
+							
+							if Prox and HumanoidRootPart then
+								repeat									
+									HMNRT.CFrame = HumanoidRootPart.CFrame
+									wait(0.2)
+									fireproximityprompt(Prox)
+									wait(4)
+								until not character:FindFirstChildOfClass("Tool")
+								Take_Count = Take_Count + 1
+							end
+							
+							for _, Fruit in ipairs(character:GetChildren()) do
+								if Fruit:IsA("Tool") then
+									Fruit.Parent = player.Backpack
+								end
+							end
+							
+						until Take_Count >= 5 or WantChar == nil
+						
+					end
+				end
+			end
+		end
+	end
+end
