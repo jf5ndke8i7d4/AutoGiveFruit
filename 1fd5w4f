@@ -308,6 +308,10 @@ local function smartWarpTo(targetPosition)
 			if UserHurt == true then break end
 			if #NotificationS:GetChildren() < 5 then
 				
+				if humanoid.Sit then
+					humanoid.Sit = false
+				end
+				
 				local targetPos = waypoint.Position
 				local isJumpPoint = waypoint.Action == Enum.PathWaypointAction.Jump
 
@@ -357,8 +361,8 @@ local function smartWarpTo(targetPosition)
 						end
 					end
 					
-					if humanoid.Sit == true then
-						humanoid.Jump = true
+					if humanoid.Sit then
+						humanoid.Sit = false
 					end
 
 					-- วาร์ปไปตำแหน่งใหม่
@@ -408,9 +412,7 @@ local function smartWarpTo(targetPosition)
 		if UsePathFinding == false then break end
 		if UserHurt == true then break end
 		if #NotificationS:GetChildren() > 5 then
-			task.wait(1.5)
-			humanoid.Jump = true
-			task.wait(1.5)
+			task.wait(0.5)
 			WindUI:Notify({
 				Title = "Walk Path Reset",
 				Content = "รีเซ็ทการเดิน "..attempts,
@@ -434,15 +436,14 @@ local function smartWarpTo(targetPosition)
 		else
 			-- เลื่อนตัวทีละนิด
 			local currentPos = HMNRT.Position
-			local escapeSteps = splitWaypoint(currentPos, currentPos + Vector3.new(
-				math.random(-6, 6),
-				2,
-				math.random(-6, 6)
-				), 3)
+			local escapeSteps = splitWaypoint(currentPos, currentPos + Vector3.new(math.random(-6, 6),2,math.random(-6, 6)), 3)
 
 			for _, escapePos in ipairs(escapeSteps) do
 				if UsePathFinding == false then break end
 				if UserHurt == true then break end
+				if humanoid.Sit then
+					humanoid.Sit = false
+				end
 				HMNRT.CFrame = CFrame.new(escapePos)
 				wait(0.12)
 			end
@@ -495,7 +496,7 @@ local ConsumableOptionsHolder = plrGui:WaitForChild("ConsumableBuy"):WaitForChil
 local CategoriesFrame = ConsumableOptionsHolder:WaitForChild("CategoriesFrame")
 local ConsumableOptionsScrollingFrame = ConsumableOptionsHolder:WaitForChild("ConsumableOptionsScrollingFrame")
 local function BuyHardwareStore(ItemName)
-	local MainFrame, Resut = nil, "none"
+	local MainFrame, Resut = nil, false
 	if ItemName then
 		for i,v in ipairs(ConsumableOptionsScrollingFrame:GetChildren()) do
 			if v:FindFirstChild("Item") and v:FindFirstChild("Item"):FindFirstChild("Options") and v:FindFirstChild("Item"):FindFirstChild("Options"):FindFirstChild("ConsumableName") then
@@ -503,7 +504,7 @@ local function BuyHardwareStore(ItemName)
 				if ConsumableName and MainFrame == nil and matchesAllowedKeyword(ConsumableName.Text, {ItemName}) then
 					MainFrame = v
 				else
-					Resut = "Don't Have Item!"
+					Resut = false
 				end
 			end 
 		end
@@ -513,12 +514,12 @@ local function BuyHardwareStore(ItemName)
 				local TextLabel = ConsumableBuyButton:FindFirstChild("TextLabel")
 				if tonumber(TextLabel.ContentText:match("%d+")) and tonumber(TextLabel.ContentText:match("%d+")) <= PlayerMoney then
 					firesignal(ConsumableBuyButton.MouseButton1Click)
-					Resut = "You got "..ItemName.." !"
+					Resut = true
 				else
-					Resut = "You Don't have Money"
+					Resut = false
 				end
 			else
-				Resut = " You can't buy this!"
+				Resut = false
 			end
 		end
 	end
@@ -544,6 +545,7 @@ local function CanBuyHardwareStore(ItemName)
 				local TextLabel = ConsumableBuyButton:FindFirstChild("TextLabel")
 				if tonumber(TextLabel.ContentText:match("%d+")) and tonumber(TextLabel.ContentText:match("%d+")) <= PlayerMoney then
 					Resut = true
+					print(ItemName.." Cost is "..tonumber(TextLabel.ContentText:match("%d+")))
 				else
 					Resut = false
 				end
@@ -568,18 +570,18 @@ for i,v in ipairs(SidebarHolderSlider:GetChildren()) do
 		break
 	end
 end
-local function FindItem(ItemName)
+local function FindItem(ItemName, Equip)
 	Items.Enabled = false
 	firesignal(InventoryButton.MouseButton1Click)
 	local button, Resut = nil, false
-	wait(0.3)
+	wait(0.15)
 	if ItemName then
-		for i,v in ipairs(ItemsScrollingFrame:GetChildren()) do
-			if v:IsA("ImageButton") and v.Visible == true and v:FindFirstChild("ItemName") then
-				local ItemName_IT = v:FindFirstChild("ItemName")
+		for i,ImageButton in ipairs(ItemsScrollingFrame:GetChildren()) do
+			if ImageButton:IsA("ImageButton") and ImageButton.Visible == true and ImageButton:FindFirstChild("ItemName") then
+				local ItemName_IT = ImageButton:FindFirstChild("ItemName")
 				if Resut == false and matchesAllowedKeyword(ItemName_IT.Text, {ItemName}) then
 					Resut = true
-					button = v
+					button = ImageButton
 					print("")
 					warn("**** FindItem() **** Player Have "..ItemName)
 					print("")
@@ -588,54 +590,75 @@ local function FindItem(ItemName)
 			end
 		end
 	end
-	if ItemsHolder.Visible == true then
-		repeat
-			firesignal(InventoryButton.MouseButton1Click)
-			wait(0.1)
-		until ItemsHolder.Visible == true
-	end
-	Items.Enabled = true
-	return Resut, button
-end
-local function EquipItemInInventory(ItemName)
-	local Resut = "none"
-	if ItemName then
-		local Resut, Item = FindItem(ItemName)
-		if Item then
-			firesignal(Item.MouseButton1Click)
+	if Equip and button then
+		if not character:FindFirstChildOfClass("Tool") then
+			firesignal(button.MouseButton1Click)
 			wait(0.3)
 			firesignal(EquipItemButton.MouseButton1Click)
 			wait(0.3)
 			firesignal(ItemsCloseButton.MouseButton1Click)
-			Resut = "SetItemToHotBar"
 			if character:FindFirstChildOfClass("Tool") then
 				character:FindFirstChildOfClass("Tool").Parent = player.Backpack
 			end
-			if player.Backpack:FindFirstChild(ItemName) then
-				player.Backpack:FindFirstChild(ItemName).Parent = character
-				Resut = "Equipped"
+			for i,v in ipairs(player.Backpack:GetChildren()) do
+				if matchesAllowedKeyword(v.Name, {ItemName}) then
+					v.Parent = character
+					break
+				end
 			end
 		end
 	end
-	return Resut
+	if ItemsHolder.Visible == true then
+		firesignal(InventoryButton.MouseButton1Click)
+	end
+	wait(0.2)
+	Items.Enabled = true
+	return Resut, button
 end
-
+local function FindVehicle(ItemType, SpawnEnabled)
+	Items.Enabled = false
+	firesignal(InventoryButton.MouseButton1Click)
+	local button, Resut = nil, false
+	wait(0.15)
+	if ItemType then
+		for i,ImageButton in ipairs(ItemsScrollingFrame:GetChildren()) do
+			if ImageButton:IsA("ImageButton") and ImageButton.Visible == true and ImageButton:FindFirstChild("ItemName") then
+				local ItemName_IT = ImageButton:FindFirstChild("ItemName")
+				if Resut == false and ImageButton:GetAttribute("ItemType") == ItemType then
+					Resut = true
+					button = ImageButton
+					print("")
+					warn("**** FindItem() **** Player Have "..ItemName_IT.Text)
+					print("")
+					break
+				else
+					print("")
+					warn("**** FindItem() **** Player Don't Have "..ItemType.." Type!")
+					print("")
+					break
+				end
+			end
+		end
+	end
+	if SpawnEnabled and button then
+		if not character:FindFirstChildOfClass("Tool") then
+			firesignal(button.MouseButton1Click)
+			wait(0.3)
+			firesignal(EquipItemButton.MouseButton1Click)
+			wait(0.3)
+			firesignal(ItemsCloseButton.MouseButton1Click)
+		end
+	end
+	if ItemsHolder.Visible == true then
+		firesignal(InventoryButton.MouseButton1Click)
+	end
+	wait(0.2)
+	Items.Enabled = true
+	return Resut, button
+end
 local CounterGetGC
 Map = workspace:WaitForChild("Map")
 Tiles = Map:WaitForChild("Tiles")
-
-pcall(function()
-	OldCFrame = HMNRT.CFrame
-	ConsumableBuy = plrGui:WaitForChild("ConsumableBuy")
-	ConsumableBuy.Enabled = false
-	Camera.CameraType = Enum.CameraType.Scriptable
-	HMNRT.CFrame = workspace.ShopZone_Hardware.CFrame
-	wait(0.1)
-	HMNRT.CFrame = OldCFrame
-	Camera.CameraType = Enum.CameraType.Custom
-	RemoveNotifications()
-	ConsumableBuy.Enabled = true
-end)
 
 for i,v in ipairs(Map:WaitForChild("SafeZoneIndicators"):GetDescendants()) do
 	if v:IsA("BasePart") then
@@ -654,7 +677,6 @@ Notifications = plrGui:WaitForChild("Notifications")
 ProgressBarFrame = plrGui:WaitForChild("ProgressBar"):WaitForChild("ProgressBarFrame")
 BarAmount = ProgressBarFrame:WaitForChild("MainFrame"):WaitForChild("BarAmount")
 FinishBar = ProgressBarFrame:WaitForChild("InputFrame"):WaitForChild("FinishBar")
-
 
 
 Quick11Beacon = Tiles:WaitForChild("GasStationTile"):WaitForChild("Quick11"):WaitForChild("Interior"):WaitForChild("Quick11Beacon")
@@ -807,9 +829,10 @@ task.spawn(function()
 						end
 					end)
 				end
+				wait()
 			end
 		end
-		task.wait(0.7)
+		task.wait(0.65)
 	end
 end)
 
@@ -835,7 +858,6 @@ Tabs.Mode1:Toggle({
 	end
 })
 
-
 Tabs.Mode1:Button({
 	Title = "Invisible",
 	Desc = "ล่องหน",
@@ -851,6 +873,20 @@ Tabs.Mode1:Button({
 	end,
 })
 
+Tabs.Mode1:Slider({
+	Title = Translate("ปรับเฟรมเรท", "Set Fps"),
+	Value = {
+		Min = 5,
+		Max = 120,
+		Default = 60,
+	},
+	Callback = function(value)
+		pcall(function()
+			setfpscap(tonumber(value))
+		end)
+	end
+})
+
 Tabs.Mode1:Divider()
 
 Tabs.Mode1:Button({
@@ -858,7 +894,8 @@ Tabs.Mode1:Button({
 	Desc = "คลิกเพื่อเซ็ท",
 	Callback = function()
 		pcall(function()
-			firesignal(InventoryButton.MouseButton1Click)
+			firesignal(plrGui:WaitForChild("KeybindHints"):WaitForChild("KeybindHintsHolder"):WaitForChild("VehicleOptions"):WaitForChild("LockVehicleButton").MouseButton1Click)
+			
 		end)
 		WindUI:Notify({
 			Title = "คุณได้เปิดฟังชั่น",
@@ -883,20 +920,14 @@ Tabs.Mode1:Button({
 	end,
 })
 
-local UserSkill_Janitor = 0
-local UserSkill_Stamina = 0
-local UserSkill_Shelf = 0
-local UserSkill_Fishing = 0
-local UserSkill_Farming = 0
-local UserSkill_Cook = 0
-local UserSkill_Swiper = 0
+local UserSkill_Janitor, UserSkill_Stamina, UserSkill_Shelf, UserSkill_Fishing, UserSkill_Farming, UserSkill_Cook, UserSkill_Swiper = 0, 0, 0, 0, 0, 0, 0
 
 task.spawn(function()
 	while true do
 		PlayerMoney = tonumber(MoneyTextLabel.ContentText:match("%d+"))
 		wait(1)
 		for i,v in ipairs(SkillsScrollingFrame:GetChildren()) do
-			if v:IsA("ImageButton") and v:FindFirstChild("SkillTitle") then
+			if v:IsA("ImageButton") and v:FindFirstChild("SkillTitle") and v:FindFirstChild("SkillTitle"):IsA("TextLabel") then
 				local SkillTitle = v:FindFirstChild("SkillTitle")
 				if matchesAllowedKeyword(SkillTitle.Text, {"Stamina"}) then
 					UserSkill_Stamina = tonumber(SkillTitle.ContentText:match("%d+"))
@@ -960,10 +991,13 @@ Tabs.Mode2:Toggle({
 		AutoReSpawn = state
 	end
 })
+
 local Send = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Send")
+local HealthBar = plrGui:WaitForChild("TopRightHud"):WaitForChild("Holder"):WaitForChild("HealthBar"):WaitForChild("Fill")
+local DeathScreenHolder = plrGui:WaitForChild("DeathScreen"):WaitForChild("DeathScreenHolder")
+local RespawnButton = DeathScreenHolder:WaitForChild("Frame"):WaitForChild("RespawnButtonFrame"):WaitForChild("RespawnButton")
 task.spawn(function()
-	local HealthBar = plrGui:WaitForChild("TopRightHud"):WaitForChild("Holder"):WaitForChild("HealthBar"):WaitForChild("Fill")
-	local SafeCFrame, StuckSafeMode = nil, 0
+	local SafeCFrame, StuckSafeMode, StuckRespawn = nil, 0, 0
 	while true do
 		wait(1)
 		if Keeppeoplefromkilling and HealthBar then
@@ -990,20 +1024,34 @@ task.spawn(function()
 				SafeCFrame = HMNRT.CFrame
 			end
 		end
-		if AutoReSpawn and HealthBar.Size.X.Scale < 0.1 then
-			local CounterTable
-			for _, obj in ipairs(getgc(true)) do
-				if type(obj) == "table" and rawget(obj, "event") and rawget(obj, "func") then
-					CounterTable = obj
-					break
+		if AutoReSpawn and HealthBar.Size.X.Scale < 0.1 and DeathScreenHolder.Visible == true then
+			StuckRespawn = 0
+			repeat
+				StuckRespawn = StuckRespawn + 0.5
+				task.wait(0.5)
+			until RespawnButton.TextLabel == "Respawn" or StuckRespawn >= 10
+			StuckRespawn = 0
+			repeat
+				StuckRespawn = StuckRespawn + 1
+				firesignal(RespawnButton.MouseButton1Click)
+				task.wait(1)
+			until DeathScreenHolder.Visible == false or StuckRespawn >= 5
+			if DeathScreenHolder.Visible == true then
+				for _, obj in ipairs(getgc(true)) do
+					if type(obj) == "table" and rawget(obj, "event") and rawget(obj, "func") then
+						CounterTable = obj
+						break
+					end
 				end
+				CounterTable.event += 1
+				Send:FireServer(CounterTable.event,"death_screen_request_respawn")
 			end
-			CounterTable.event += 1
-			Send:FireServer(CounterTable.event,"death_screen_request_respawn")
 			task.wait(0.5)
-			humanoid.Health = humanoid.Health - 1
-			wait(0.1)
-			humanoid.Health = humanoid.MaxHealth
+			if HealthBar.Size.X.Scale < 0.1 then
+				humanoid.Health = humanoid.Health - 1
+				wait(0.1)
+				humanoid.Health = humanoid.MaxHealth
+			end
 		end
 	end
 end)
@@ -1145,6 +1193,9 @@ local function GotoNearATM()
 					if UserHurt == true then break end
 					if SurfaceGuiATM.Enabled == true then break end
 					if #NotificationS:GetChildren() < 5 then
+						if humanoid.Sit then
+							humanoid.Sit = false
+						end
 						local targetPos = waypoint.Position
 						local isJumpPoint = waypoint.Action == Enum.PathWaypointAction.Jump
 						local shortSteps = splitWaypoint(currentPos, targetPos, 3)
@@ -1168,11 +1219,7 @@ local function GotoNearATM()
 							local safePos = Vector3.new(stepPos.X, safeHeight, stepPos.Z)
 							if not isSafePosition(safePos) then
 								for attempt = 1, 3 do
-									local offset = Vector3.new(
-										math.random(-2, 2),
-										2,
-										math.random(-2, 2)
-									)
+									local offset = Vector3.new(math.random(-2, 2),2,math.random(-2, 2))
 									local testPos = safePos + offset
 									if isSafePosition(testPos) then
 										safePos = testPos
@@ -1190,6 +1237,9 @@ local function GotoNearATM()
 								wait(0.1)
 								local landPos = Vector3.new(safePos.X, targetPos.Y + 1, safePos.Z)
 								if isSafePosition(landPos) then
+									if humanoid.Sit then
+										humanoid.Sit = false
+									end
 									HMNRT.CFrame = CFrame.new(landPos)
 									currentPos = landPos
 								end
@@ -1215,9 +1265,7 @@ local function GotoNearATM()
 				if UserHurt == true then break end
 				if SurfaceGuiATM.Enabled == true then break end
 				if #NotificationS:GetChildren() > 5 then
-					task.wait(1.5)
-					humanoid.Jump = true
-					task.wait(1.5)
+					task.wait(0.5)
 					WindUI:Notify({
 						Title = "Walk Path Reset",
 						Content = "รีเซ็ทการเดิน "..attempts,
@@ -1242,6 +1290,9 @@ local function GotoNearATM()
 						if UsePathFinding == false then break end
 						if UserHurt == true then break end
 						if SurfaceGuiATM.Enabled == true then break end
+						if humanoid.Sit then
+							humanoid.Sit = false
+						end
 						HMNRT.CFrame = CFrame.new(escapePos)
 						wait(0.12)
 					end
@@ -1311,6 +1362,103 @@ Section = Tabs.Mode2:Section({
 	TextXAlignment = "Left",
 	TextSize = 25,
 })
+Section:SetTitle(Translate("💳 ออโต้ปล้นเอทีเอ็ม ( เลเวล 10+ )", "💳 Auto Hack ATM ( Level 10+ )"))
+
+ATM_Farm = false
+Tabs.Mode2:Toggle({
+	Title = Translate("เริ่มทำงาน", "Start working"),
+	Value = false,
+	Callback = function(state) 
+		ATM_Farm = state
+		if Cook_Farm == true then
+			WindUI:Notify({
+				Title = "คุณได้เปิดฟังชั่น",
+				Content = "ออโต้ปล้นเอทีเอ็ม",
+				Duration = 5,})
+			VehicleBlockers.Parent = DoorFolder
+			for i,v in ipairs(workspace:GetDescendants()) do
+				if v.Name == "DoorSystem" then
+					v.Parent = DoorFolder
+				end
+			end
+		else
+			UsePathFinding = false
+			WindUI:Notify({
+				Title = "คุณได้ปิดฟังชั่น",
+				Content = "ออโต้ปล้นเอทีเอ็ม",
+				Duration = 5,})
+			VehicleBlockers.Parent = Map
+			for i,v in ipairs(DoorFolder:GetChildren()) do
+				v.Parent = workspace
+			end
+			task.wait(1)
+			UsePathFinding = false
+		end
+	end
+})
+--PlayerGui.KeybindHints.KeybindHintsHolder.VehicleOptions.LockVehicleButton
+local LockVehicleButton = plrGui:WaitForChild("KeybindHints"):WaitForChild("KeybindHintsHolder"):WaitForChild("VehicleOptions"):WaitForChild("LockVehicleButton")
+task.spawn(function()
+	local PlayerVehicle, Vehicles = nil, workspace:WaitForChild("Vehicles")
+	
+	local function FindVehicleUser()
+		for i,v in ipairs(Vehicles:GetChildren()) do
+			if v:IsA("Model") and v:GetAttribute("OwnerUserId") == player.UserId then
+				if v:FindFirstChildOfClass("VehicleSeat") then
+					local VehicleSeat = v:FindFirstChildOfClass("VehicleSeat")
+					repeat
+						if IsNear(HMNRT.Position, VehicleSeat.Position, 5) then
+							VehicleSeat:Sit(humanoid)
+						else
+							local smartWalkToJobBegin =	smartWarpTo(VehicleSeat.Position + Vector3.new(0,-1,0))
+						end
+						wait(0.1)
+					until humanoid.Sit == true
+					PlayerVehicle = VehicleSeat
+				end
+			end
+		end
+	end
+	
+	while true do
+		if ATM_Farm then
+			repeat
+				
+				FindVehicleUser()
+				
+				if PlayerVehicle == nil then
+					local FindVehicle = FindVehicle("bike", true)
+					if FindVehicle then
+						FindVehicleUser()
+					end
+				end
+				
+				if PlayerVehicle then
+					
+					--Lock image    =  rbxassetid://6249640130
+					--UnLock image  =  rbxassetid://14061898347
+					
+					LockVehicleImageLabel = LockVehicleButton:WaitForChild("LockVehicleImageLabel")
+					if LockVehicleImageLabel and LockVehicleImageLabel.Image == "rbxassetid://14061898347" then
+						print("******* Lock User Vehicle")
+						firesignal(LockVehicleButton.MouseButton1Click)
+					end
+				end
+				
+				wait(1)
+			until ATM_Farm == false
+		end
+		wait(1)
+	end
+end)
+
+Tabs.Mode2:Divider()
+
+Section = Tabs.Mode2:Section({ 
+	Title = "Section",
+	TextXAlignment = "Left",
+	TextSize = 25,
+})
 Section:SetTitle(Translate("🥩 ออโต้ทำงานร้านอาหาร", "🥩 Auto working restaurant"))
 
 Cook_Farm = false
@@ -1323,8 +1471,7 @@ Tabs.Mode2:Toggle({
 			WindUI:Notify({
 				Title = "คุณได้เปิดฟังชั่น",
 				Content = "ออโต้ทำงานร้านอาหาร",
-				Duration = 5,
-			})
+				Duration = 5,})
 			VehicleBlockers.Parent = DoorFolder
 			for i,v in ipairs(workspace:GetDescendants()) do
 				if v.Name == "DoorSystem" then
@@ -1336,8 +1483,7 @@ Tabs.Mode2:Toggle({
 			WindUI:Notify({
 				Title = "คุณได้ปิดฟังชั่น",
 				Content = "ออโต้ทำงานร้านอาหาร",
-				Duration = 5,
-			})
+				Duration = 5,})
 			VehicleBlockers.Parent = Map
 			for i,v in ipairs(DoorFolder:GetChildren()) do
 				v.Parent = workspace
@@ -1363,12 +1509,12 @@ task.spawn(function()
 	local function EquiNewJobTool()
 		if not Change_Job_Tool_Level then return end
 		if UserSkill_Cook >= 10 and UserSkill_Cook < 25 then
-			--print("***** Player Level > 10 ")
+			print("***** Player Level > 10 ")
 			local BronzeSkillet = FindItem("BronzeSkillet")
 			if BronzeSkillet == false then
-				--print("***** Player Don't have Bronze Skillet ")
+				print("***** Player Don't have Bronze Skillet ")
 				if CanBuyHardwareStore("Bronze Skillet") then
-					--print("***** Player Can buy Bronze Skillet / Goto Shop! ")
+					print("***** Player Can buy Bronze Skillet / Goto Shop! ")
 					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
 					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
 						BuyHardwareStore("Bronze Skillet")
@@ -1376,12 +1522,12 @@ task.spawn(function()
 				end
 			end
 		elseif UserSkill_Cook >= 25 and UserSkill_Cook < 40 then
-			--print("***** Player Level > 25 ")
+			print("***** Player Level > 25 ")
 			local SilverSkillet = FindItem("SilverSkillet")
 			if SilverSkillet == false then
-				--print("***** Player Don't have SilverSkillet ")
+				print("***** Player Don't have SilverSkillet ")
 				if CanBuyHardwareStore("Silver Skillet") then
-					--print("***** Player Can buy SilverSkillet / Goto buy")
+					print("***** Player Can buy SilverSkillet / Goto buy")
 					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
 					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
 						BuyHardwareStore("Silver Skillet")
@@ -1389,12 +1535,12 @@ task.spawn(function()
 				end
 			end
 		elseif UserSkill_Cook >= 40 then
-			--print("***** Player Level > 40 ")
+			print("***** Player Level > 40 ")
 			local GoldenSkillet = FindItem("GoldenSkillet")
 			if GoldenSkillet == false then
-				--print("***** Player con't have GoldenSkillet ")
+				print("***** Player con't have GoldenSkillet ")
 				if CanBuyHardwareStore("Golden Skillet") then
-					--print("***** Player Can buy GoldenSkillet / Goto buy")
+					print("***** Player Can buy GoldenSkillet / Goto buy")
 					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
 					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
 						BuyHardwareStore("Golden Skillet")
@@ -1406,14 +1552,20 @@ task.spawn(function()
 
 	while true do
 		if Cook_Farm then
-			EquiNewJobTool()
 			
 			if player:GetAttribute("Job") ~= "steakhouse_cook" then
+				
 				if Depositing == true or UserHurt == true then
 					repeat
 						task.wait(0.5)
 					until Depositing == false and UserHurt == false
 				end
+				
+				if CanCheckTool == false then
+					EquiNewJobTool()
+					CanCheckTool = true
+				end
+				
 				repeat
 					local smartWalkToJobBegin =	smartWarpTo(SteakHouseBeacon.TouchPart.Position + Vector3.new(0,1,0))
 					if IsNear(HMNRT.Position, SteakHouseBeacon.TouchPart.Position, 5) then
@@ -1428,21 +1580,17 @@ task.spawn(function()
 						end
 						CounterGetGC.event += 1
 						Send:FireServer(CounterGetGC.event,"apply_for_job",SteakHouseBeacon)
+						CanCheckTool = false
 					end
 					wait(0.1)
 				until player:GetAttribute("Job") == "steakhouse_cook" or Stock_Farm == false or Depositing == true or UserHurt == true
 				WindUI:Notify({
 					Title = "สมัครงานร้านอาหาร",
 					Content = "สำเร็จ",
-					Duration = 5,
-				})
+					Duration = 5,})
 			else
 				
 				repeat
-					if CanCheckTool == false then
-						EquiNewJobTool()
-						CanCheckTool = true
-					end
 					if JobApplicationFrame.Visible == true then
 						JobApplicationFrame.Visible = false
 					end
@@ -1450,6 +1598,11 @@ task.spawn(function()
 						repeat
 							task.wait(0.5)
 						until Depositing == false and UserHurt == false
+					end
+					
+					if CanCheckTool == false then
+						EquiNewJobTool()
+						CanCheckTool = true
 					end
 					
 					local smartWalkToJobBegin =	smartWarpTo(Area.Position + Vector3.new(0,-4,2))
@@ -1535,8 +1688,7 @@ Tabs.Mode2:Toggle({
 			WindUI:Notify({
 				Title = "คุณได้เปิดฟังชั่น",
 				Content = "ออโต้ทำงานจัดของ",
-				Duration = 5,
-			})
+				Duration = 5,})
 			VehicleBlockers.Parent = DoorFolder
 			for i,v in ipairs(workspace:GetDescendants()) do
 				if v.Name == "DoorSystem" then
@@ -1548,8 +1700,7 @@ Tabs.Mode2:Toggle({
 			WindUI:Notify({
 				Title = "คุณได้ปิดฟังชั่น",
 				Content = "ออโต้ทำงานจัดของ",
-				Duration = 5,
-			})
+				Duration = 5,})
 			VehicleBlockers.Parent = Map
 			for i,v in ipairs(DoorFolder:GetChildren()) do
 				v.Parent = workspace
@@ -1566,7 +1717,7 @@ task.spawn(function()
 	local TakeJobPosition = Vector3.new(159, 255, 208)
 	local TakeBoxPosition = Vector3.new(133, 255, 208)
 	local ShelfStockingJob = Tiles:WaitForChild("GasStationTile"):WaitForChild("Quick11"):WaitForChild("Interior"):WaitForChild("ShelfStockingJob")
-	
+		
 	while true do
 		if Stock_Farm then
 			if player:GetAttribute("Job") ~= "shelf_stocker" then
@@ -1595,8 +1746,7 @@ task.spawn(function()
 				WindUI:Notify({
 					Title = "สมัครงานจัดของ",
 					Content = "สำเร็จ",
-					Duration = 5,
-				})
+					Duration = 5,})
 			else
 				repeat
 					if JobApplicationFrame.Visible == true and player:GetAttribute("Job") == "shelf_stocker" then
@@ -1699,18 +1849,6 @@ Section = Tabs.Mode2:Section({
 })
 Section:SetTitle(Translate("🧹 ออโต้ทำงานถูพื้น", "🧹 Auto floor mopping"))
 
-NameNeedMob = {"SmallPuddle"}
-Tabs.Mode2:Dropdown({
-	Title = Translate("แอ่งน้ำที่อนุญาตให้ถู", "Puddles where mopping is allowed"),
-	Values = {"SmallPuddle", "LargePuddle", "NastyPuddle", "OilPuddle", "ToxicPuddle"},
-	Value = {"SmallPuddle", "LargePuddle", "NastyPuddle", "OilPuddle", "ToxicPuddle"},
-	Multi = true,
-	AllowNone = true,
-	Callback = function(option) 
-		NameNeedMob = option
-	end
-})
-
 Mob_Farm = false
 Tabs.Mode2:Toggle({
 	Title = Translate("เริ่มทำงาน", "Start working"),
@@ -1748,11 +1886,80 @@ Tabs.Mode2:Toggle({
 
 task.spawn(function()
 	local Puddles = Map:WaitForChild("Tiles"):WaitForChild("BurgerPlaceTile"):WaitForChild("BurgerPlace"):WaitForChild("Interior"):WaitForChild("Puddles")
-	local StuckMob = 0
-	local NearPart = nil
-	local NearDis = math.huge
-	local HardWarePosition = Vector3.new(-136.406662, 254.851074, 153.555588)
+	local StuckMob, NearPart, NearDis, CheckJobTool, CanWork, JobToolName = 0, nil, math.huge, false, false, "Mop"
+	-- local NearPart = nil -- local NearDis = math.huge
+	local HardWarePosition = Vector3.new(-136.4, 254.8, 153.5)
 	
+	local function EquiNewJobTool()
+		if not Change_Job_Tool_Level then return end
+		
+		----*Bronze Mop / lvl.10
+		----*Silver Mop / lvl.25
+		----*Golden Mop / lvl.40
+		----*Diamon Mop / lvl.55
+		
+		if UserSkill_Janitor >= 10 and UserSkill_Janitor < 25 then
+			print("***** Player Level > 10 ")
+			local Bronze_Mop = FindItem("Bronze Mop", true)
+			if Bronze_Mop == false then
+				print("***** Player Don't have Bronze Mop ")
+				if CanBuyHardwareStore("Bronze Mop") then
+					print("***** Player Can buy Bronze Mop / Goto Shop! ")
+					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
+					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
+						BuyHardwareStore("Bronze Mop")
+					end
+				end
+			else
+				JobToolName = "Bronze Mop"
+			end
+		elseif UserSkill_Janitor >= 25 and UserSkill_Janitor < 40 then
+			print("***** Player Level > 25 ")
+			local Silver_Mop = FindItem("Silver Mop", true)
+			if Silver_Mop == false then
+				print("***** Player Don't have Silver Mop ")
+				if CanBuyHardwareStore("Silver Mop") then
+					print("***** Player Can buy Silver Mop / Goto buy")
+					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
+					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
+						BuyHardwareStore("Silver Mop")
+					end
+				end
+			else
+				JobToolName = "Silver Mop"
+			end
+		elseif UserSkill_Janitor >= 40 and UserSkill_Janitor < 55 then
+			print("***** Player Level > 40 ")
+			local Golden_Mop = FindItem("Golden Mop", true)
+			if Golden_Mop == false then
+				print("***** Player con't have Golden Mop ")
+				if CanBuyHardwareStore("Golden Mop") then
+					print("***** Player Can buy Golden Mop / Goto buy")
+					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
+					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
+						BuyHardwareStore("Golden Mop")
+					end
+				end
+			else
+				JobToolName = "Golden Mop"
+			end
+		elseif UserSkill_Janitor > 55 then
+			print("***** Player Level > 40 ")
+			local Diamon_Mop = FindItem("Diamon Mop", true)
+			if Diamon_Mop == false then
+				print("***** Player con't have Diamon Mop ")
+				if CanBuyHardwareStore("Diamon Mop") then
+					print("***** Player Can buy Diamon Mop / Goto buy")
+					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
+					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
+						BuyHardwareStore("Diamon Mop")
+					end
+				end
+			else
+				JobToolName = "Diamon Mop"
+			end
+		end
+	end
 	while true do
 		if Mob_Farm then
 			if player:GetAttribute("Job") ~= "janitor" then
@@ -1761,6 +1968,12 @@ task.spawn(function()
 						task.wait(0.5)
 					until Depositing == false and UserHurt == false
 				end
+				
+				if CheckJobTool == false then
+					EquiNewJobTool()
+					CheckJobTool = true
+				end
+				
 				repeat
 					local smartWalkToJobBegin =	smartWarpTo(JobBegin_BurgePlaceBeacon.Position + Vector3.new(0,1,0))					
 					if IsNear(HMNRT.Position, JobBegin_BurgePlaceBeacon.Position, 5) then
@@ -1779,6 +1992,7 @@ task.spawn(function()
 					wait(0.1)
 				until player:GetAttribute("Job") == "janitor" or Mob_Farm == false 
 					or Depositing == true or UserHurt == true
+				CheckJobTool = false
 				WindUI:Notify({
 					Title = "สมัครงานถูพื้น",
 					Content = "สำเร็จ",
@@ -1786,6 +2000,7 @@ task.spawn(function()
 				})
 			else
 				repeat
+					
 					if JobApplicationFrame.Visible == true and player:GetAttribute("Job") == "janitor" then
 						JobApplicationFrame.Visible = false
 					end
@@ -1794,9 +2009,17 @@ task.spawn(function()
 							task.wait(0.5)
 						until Depositing == false and UserHurt == false
 					end
-					if not character:FindFirstChild("Mop") then
-						if player.Backpack:FindFirstChild("Mop") then
-							player.Backpack.Mop.Parent = character
+					
+					if CheckJobTool == false then
+						EquiNewJobTool()
+						CheckJobTool = true
+					end
+					
+					if JobToolName == "Mop" then
+						if not character:FindFirstChild("Mop") then
+							if player.Backpack:FindFirstChild("Mop") then
+								player.Backpack.Mop.Parent = character
+							end
 						end
 					end
 					
@@ -1804,59 +2027,63 @@ task.spawn(function()
 					NearDis = math.huge
 					
 					for i,v in ipairs(Puddles:GetChildren()) do
-						if v.Size.X > 4 and matchesAllowedKeyword(v.Name, NameNeedMob) then
+						CanWork = true
+						if v.Size.X > 4 then
 							
-							----*Bronze Mop / lvl.10
-							----*Silver Mop / lvl.25
-							----*Golden Mop / lvl.40
-							----*Diamon Mop / lvl.55
+							----***LargePuddle / lvl.10	----***NastyPuddle / lvl.20
+							----***OilPuddle / lvl.35 ----***ToxicPuddle / lvl.50
 							
-							----***LargePuddle / lvl.10
-							----***NastyPuddle / lvl.20
-							----***OilPuddle / lvl.35
-							----***ToxicPuddle / lvl.50
-							
-							if UserSkill_Janitor < 10 and v.Name == "LargePuddle" then return end
-							if UserSkill_Janitor < 20 and v.Name == "NastyPuddle" then return end
-							if UserSkill_Janitor < 35 and v.Name == "OilPuddle" then return end
-							if UserSkill_Janitor < 50 and v.Name == "ToxicPuddle" then return end
-							
-							local dis = (HMNRT.Position - v.Position).Magnitude
-							if dis < NearDis then
-								NearDis = dis
-								NearPart = v
+							if v.Name == "LargePuddle" and UserSkill_Janitor < 5 then
+								CanWork = false
+							elseif v.Name == "NastyPuddle" and UserSkill_Janitor < 20 then
+								CanWork = false
+							elseif v.Name == "OilPuddle" and UserSkill_Janitor < 35 then
+								CanWork = false
+							elseif v.Name == "ToxicPuddle" and UserSkill_Janitor < 50 then
+								CanWork = false
 							end
+							
+							if CanWork == true then
+								local dis = (HMNRT.Position - v.Position).Magnitude
+								if dis < NearDis then
+									NearDis = dis
+									NearPart = v
+								end
+							end
+							
 						end
 					end
 					
 					if NearPart then
 						local smartWalkToPuddles = smartWarpTo(NearPart.Position + Vector3.new(0,2,0))
+						StuckMob = 0
 						repeat
 							StuckMob = StuckMob + 0.3
 							task.wait(0.3)
 							if ProgressBarFrame.Visible == false then
 								StuckMob = StuckMob + 5
 							end
-						until NearPart.Size.X < 0.002 or StuckMob >= 15 
+						until NearPart.Size.X < 0.002 or StuckMob >= 15 or NearPart == nil
 							or Depositing == true or Mob_Farm == false or player:GetAttribute("Job") ~= "janitor" or UserHurt == true
 						UsePathFinding = false
 						StuckMob = 0
-						NearPart.Parent = SomtankInfo_Puddles
-						if NearPart.Size.X < 0.002 then
-							WindUI:Notify({
-								Title = "ถูพื้น",
+						if NearPart and NearPart.Size.X < 0.002 and SomtankInfo_Puddles then
+							NearPart.Parent = SomtankInfo_Puddles
+						end
+						if NearPart and NearPart.Size.X < 0.002 then
+							WindUI:Notify({Title = "ถูพื้น",
 								Content = "สำเร็จ",
-								Duration = 5,
-							})
+								Duration = 5,})
 						end
 						task.wait(0.1)
-						if #SomtankInfo_Puddles:GetChildren() > 5 then
+						if SomtankInfo_Puddles and #SomtankInfo_Puddles:GetChildren() > 5 then
 							for _, item in ipairs(SomtankInfo_Puddles:GetChildren()) do
 								if item.Size.X > 4 then
 									item.Parent = Puddles
 								end
 							end
 						end
+						CheckJobTool = false
 					end
 					task.wait(0.1)
 				until Mob_Farm == false or player:GetAttribute("Job") ~= "janitor" or UserHurt == true
@@ -2075,4 +2302,22 @@ myConfig:Register( "ColorpickerNameExample",     ColorpickerElement )
 
 Window:OnClose(function()
 	UiIs_Close = false
+end)
+
+pcall(function()
+	if not getgenv().SetHardWareShop_st then
+		repeat wait(0.1) until workspace:FindFirstChild("ShopZone_Hardware")
+		OldCFrame = HMNRT.CFrame
+		ConsumableBuy = plrGui:WaitForChild("ConsumableBuy")
+		wait(0.03)
+		ConsumableBuy.Enabled = false
+		Camera.CameraType = Enum.CameraType.Scriptable
+		HMNRT.CFrame = workspace.ShopZone_Hardware.CFrame
+		wait(0.03)
+		HMNRT.CFrame = OldCFrame
+		RemoveNotifications()
+		getgenv().SetHardWareShop_st = true
+	end
+	ConsumableBuy.Enabled = true
+	Camera.CameraType = Enum.CameraType.Custom
 end)
