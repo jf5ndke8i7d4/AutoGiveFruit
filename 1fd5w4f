@@ -1,5 +1,6 @@
 repeat wait(0.1) until game.Players and game.Players.LocalPlayer and game.Players.LocalPlayer.Character
 
+
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/MQPS7/SOMTANK-UI-OpenSrc/refs/heads/main/V1"))()
 
 HttpService = game:GetService("HttpService")
@@ -69,26 +70,19 @@ end
 local MoveIcon = MakeImageButton(ScreenGui, UDim2.new(0, 53,0, 51), UDim2.new(0.100, 0,0.447, 0), 1, Color3.new(1, 1, 1), 0, "rbxassetid://81129676934693")
 local FOR_MoveIcon = Instance.new("UIAspectRatioConstraint", MoveIcon)
 MakeDraggableButton(MoveIcon, MoveIcon)
-
---- EXAMPLE !!!
-
 function gradient(text, startColor, endColor)
 	local result = ""
 	local length = #text
-
 	for i = 1, length do
 		local t = (i - 1) / math.max(length - 1, 1)
 		local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
 		local g = math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255)
 		local b = math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255)
-
 		local char = text:sub(i, i)
 		result = result .. "<font color=\"rgb(" .. r ..", " .. g .. ", " .. b .. ")\">" .. char .. "</font>"
 	end
-
 	return result
 end
-
 local Window = WindUI:CreateWindow({
 	Title = "Somtank",
 	Icon = "rbxassetid://80019916158199",
@@ -106,7 +100,7 @@ local Window = WindUI:CreateWindow({
 	SideBarWidth = 200,
 	ScrollBarEnabled = true,
 })
-
+WindUI.TransparencyValue = 0
 OpenMainFrame = false
 MoveIcon.Activated:Connect(function()
 	if Icon_Position == MoveIcon.Position then
@@ -254,29 +248,36 @@ local function isSafePosition(position)
 	return false
 end
 
-local NotificationS = plrGui:WaitForChild("Notifications"):WaitForChild("Frame")
-local UsePathFinding = false
-local UserHurt = false
-local function smartWarpTo(targetPosition)
-
-	UsePathFinding = true
-	
-	character = player.Character
-	humanoid = character:FindFirstChildOfClass("Humanoid")
-	HMNRT = character:FindFirstChild("HumanoidRootPart")
-	
+local function GetgcFuntion()
+	local CounterTable = nil
 	pcall(function()
-		CounterTable = nil
 		for _, obj in ipairs(getgc(true)) do
 			if type(obj) == "table" and rawget(obj, "event") and rawget(obj, "func") then
 				CounterTable = obj
 				break
 			end
 		end
+	end)
+	return CounterTable
+end
+
+local NotificationS = plrGui:WaitForChild("Notifications"):WaitForChild("Frame")
+local UsePathFinding = false
+local UserHurt = false
+local function smartWarpTo(targetPosition)
+
+	UsePathFinding = true
+
+	character = player.Character
+	humanoid = character:FindFirstChildOfClass("Humanoid")
+	HMNRT = character:FindFirstChild("HumanoidRootPart")
+
+	pcall(function()
+		CounterTable = GetgcFuntion()
 		CounterTable.event += 1
 		Send:FireServer(CounterTable.event,"set_sprinting_1",true)
 	end)
-	
+
 	local function splitWaypoint(startPos, endPos, maxDistance)
 		local direction = (endPos - startPos)
 		local distance = direction.Magnitude
@@ -298,7 +299,7 @@ local function smartWarpTo(targetPosition)
 
 		return positions
 	end
-	
+
 	local function warpPath(waypoints)
 		local waypointsbackup = waypoints
 		local currentPos = HMNRT.Position
@@ -307,21 +308,21 @@ local function smartWarpTo(targetPosition)
 			if UsePathFinding == false then break end
 			if UserHurt == true then break end
 			if #NotificationS:GetChildren() < 5 then
-				
+
 				if humanoid.Sit then
 					humanoid.Sit = false
 				end
-				
+
 				local targetPos = waypoint.Position
 				local isJumpPoint = waypoint.Action == Enum.PathWaypointAction.Jump
 
 				-- แบ่งเส้นทางเป็นระยะสั้นๆ (3-5 studs)
 				local shortSteps = splitWaypoint(currentPos, targetPos, 3)
-								
+
 				for j, stepPos in ipairs(shortSteps) do
 					if UsePathFinding == false then break end
 					if UserHurt == true then break end
-					
+
 					-- ถ้าเป็นจุดกระโดด ให้วาร์ปสูงขึ้นก่อน
 					if isJumpPoint and j == 1 then
 						-- จำลองการกระโดด - วาร์ปขึ้นไปก่อน
@@ -360,7 +361,7 @@ local function smartWarpTo(targetPosition)
 							end
 						end
 					end
-					
+
 					if humanoid.Sit then
 						humanoid.Sit = false
 					end
@@ -370,7 +371,7 @@ local function smartWarpTo(targetPosition)
 					currentPos = safePos
 
 					wait(0.07)
-					
+
 					-- ถ้าเป็นจุดกระโดดและเป็น step สุดท้าย ให้ลงมาเล็กน้อย
 					if isJumpPoint and j == #shortSteps then
 						wait(0.1)
@@ -381,9 +382,9 @@ local function smartWarpTo(targetPosition)
 						end
 					end
 				end
-				
+
 			end
-			
+
 		end
 
 		-- ตรวจสอบว่าถึงเป้าหมายแล้วหรือไม่
@@ -420,8 +421,8 @@ local function smartWarpTo(targetPosition)
 			})
 			break
 		end
-		
-		
+
+
 		attempts = attempts + 1
 		print("Retry " .. attempts)
 
@@ -449,20 +450,23 @@ local function smartWarpTo(targetPosition)
 			end
 		end
 	end
-	
+
 	pcall(function()
-		CounterTable = nil
-		for _, obj in ipairs(getgc(true)) do
-			if type(obj) == "table" and rawget(obj, "event") and rawget(obj, "func") then
-				CounterTable = obj
-				break
-			end
-		end
+		CounterTable = GetgcFuntion()
 		CounterTable.event += 1
 		Send:FireServer(CounterTable.event,"set_sprinting_1",false)
 	end)
 
 	return success
+end
+
+local function TweenPosition(Part, PositionInput)
+	Part.Anchored = true
+	Dis = (Part.Position - PositionInput).Magnitude
+	TweenService:Create(Part, TweenInfo.new((Dis / 2),Enum.EasingStyle.Linear,Enum.EasingDirection.In,0,false,0), {Position = PositionInput}):Play()
+	wait(Dis/ 2)
+	Part.Anchored = false
+	Part.Position = PositionInput
 end
 
 local function matchesAllowedKeyword(value, allowedKeywords)
@@ -491,8 +495,8 @@ local function sendMoneyToDiscord(player, money)
 		HttpService:PostAsync(webhookUrl, jsonData, Enum.HttpContentType.ApplicationJson)
 	end)
 end
-
-local ConsumableOptionsHolder = plrGui:WaitForChild("ConsumableBuy"):WaitForChild("ConsumableOptionsHolder")
+local ConsumableBuy = plrGui:WaitForChild("ConsumableBuy")
+local ConsumableOptionsHolder = ConsumableBuy:WaitForChild("ConsumableOptionsHolder")
 local CategoriesFrame = ConsumableOptionsHolder:WaitForChild("CategoriesFrame")
 local ConsumableOptionsScrollingFrame = ConsumableOptionsHolder:WaitForChild("ConsumableOptionsScrollingFrame")
 local function BuyHardwareStore(ItemName)
@@ -545,13 +549,17 @@ local function CanBuyHardwareStore(ItemName)
 				local TextLabel = ConsumableBuyButton:FindFirstChild("TextLabel")
 				if tonumber(TextLabel.ContentText:match("%d+")) and tonumber(TextLabel.ContentText:match("%d+")) <= PlayerMoney then
 					Resut = true
-					print(ItemName.." Cost is "..tonumber(TextLabel.ContentText:match("%d+")))
 				else
 					Resut = false
 				end
+				print("")
+				warn(ItemName.." Cost is "..tonumber(TextLabel.ContentText:match("%d+")).." / User Has : "..PlayerMoney)
+				print("")
 			else
 				Resut = false
 			end
+		else
+			warn("**--**-- Not Found Items in HardWare Shop!")
 		end
 	end
 	return Resut
@@ -574,44 +582,51 @@ local function FindItem(ItemName, Equip)
 	Items.Enabled = false
 	firesignal(InventoryButton.MouseButton1Click)
 	local button, Resut = nil, false
-	wait(0.15)
-	if ItemName then
-		for i,ImageButton in ipairs(ItemsScrollingFrame:GetChildren()) do
-			if ImageButton:IsA("ImageButton") and ImageButton.Visible == true and ImageButton:FindFirstChild("ItemName") then
-				local ItemName_IT = ImageButton:FindFirstChild("ItemName")
-				if Resut == false and matchesAllowedKeyword(ItemName_IT.Text, {ItemName}) then
-					Resut = true
-					button = ImageButton
-					print("")
-					warn("**** FindItem() **** Player Have "..ItemName)
-					print("")
-					break
+	wait(0.3)
+	pcall(function()
+		if ItemName then
+			for i,ImageButton in ipairs(ItemsScrollingFrame:GetChildren()) do
+				if ImageButton:IsA("ImageButton") and ImageButton.Visible == true and ImageButton:FindFirstChild("ItemName") then
+					local ItemName_IT = ImageButton:FindFirstChild("ItemName")
+					if Resut == false and matchesAllowedKeyword(ItemName_IT.Text, {ItemName}) then
+						Resut = true
+						button = ImageButton
+						print("")
+						warn("**** FindItem() **** Player Have "..ItemName)
+						print("")
+						break
+					end
 				end
 			end
 		end
-	end
-	if Equip and button then
-		if not character:FindFirstChildOfClass("Tool") then
-			firesignal(button.MouseButton1Click)
-			wait(0.3)
-			firesignal(EquipItemButton.MouseButton1Click)
-			wait(0.3)
-			firesignal(ItemsCloseButton.MouseButton1Click)
+		if button == nil then
+			print("")
+			warn("**** FindItem() **** Player Don't Have "..ItemName.." Ineventory")
+			print("")
+		end
+		if Equip and button then
 			if character:FindFirstChildOfClass("Tool") then
 				character:FindFirstChildOfClass("Tool").Parent = player.Backpack
 			end
-			for i,v in ipairs(player.Backpack:GetChildren()) do
-				if matchesAllowedKeyword(v.Name, {ItemName}) then
-					v.Parent = character
-					break
+			if not character:FindFirstChildOfClass("Tool") then
+				firesignal(button.MouseButton1Click)
+				wait(0.3)
+				firesignal(EquipItemButton.MouseButton1Click)
+				wait(0.3)
+				firesignal(ItemsCloseButton.MouseButton1Click)
+				for i,v in ipairs(player.Backpack:GetChildren()) do
+					if matchesAllowedKeyword(v.Name, {ItemName}) then
+						v.Parent = character
+						break
+					end
 				end
 			end
 		end
-	end
-	if ItemsHolder.Visible == true then
-		firesignal(InventoryButton.MouseButton1Click)
-	end
-	wait(0.2)
+		if ItemsHolder.Visible == true then
+			firesignal(InventoryButton.MouseButton1Click)
+		end
+	end)
+	wait(0.3)
 	Items.Enabled = true
 	return Resut, button
 end
@@ -619,44 +634,45 @@ local function FindVehicle(ItemType, SpawnEnabled)
 	Items.Enabled = false
 	firesignal(InventoryButton.MouseButton1Click)
 	local button, Resut = nil, false
-	wait(0.15)
-	if ItemType then
-		for i,ImageButton in ipairs(ItemsScrollingFrame:GetChildren()) do
-			if ImageButton:IsA("ImageButton") and ImageButton.Visible == true and ImageButton:FindFirstChild("ItemName") then
-				local ItemName_IT = ImageButton:FindFirstChild("ItemName")
-				if Resut == false and ImageButton:GetAttribute("ItemType") == ItemType then
-					Resut = true
-					button = ImageButton
-					print("")
-					warn("**** FindItem() **** Player Have "..ItemName_IT.Text)
-					print("")
-					break
-				else
-					print("")
-					warn("**** FindItem() **** Player Don't Have "..ItemType.." Type!")
-					print("")
-					break
+	wait(0.3)
+	pcall(function()
+		if ItemType then
+			for i,ImageButton in ipairs(ItemsScrollingFrame:GetChildren()) do
+				if ImageButton:IsA("ImageButton") and ImageButton.Visible == true and ImageButton:FindFirstChild("ItemName") then
+					local ItemName_IT = ImageButton:FindFirstChild("ItemName")
+					if Resut == false and ImageButton:GetAttribute("ItemType") == ItemType then
+						Resut = true
+						button = ImageButton
+						print("")
+						warn("**** FindItem() **** Player Have "..ItemName_IT.Text)
+						print("")
+						break
+					end
 				end
 			end
 		end
-	end
-	if SpawnEnabled and button then
-		if not character:FindFirstChildOfClass("Tool") then
-			firesignal(button.MouseButton1Click)
-			wait(0.3)
-			firesignal(EquipItemButton.MouseButton1Click)
-			wait(0.3)
-			firesignal(ItemsCloseButton.MouseButton1Click)
+		if SpawnEnabled and button then
+			if not character:FindFirstChildOfClass("Tool") then
+				firesignal(button.MouseButton1Click)
+				wait(0.3)
+				firesignal(EquipItemButton.MouseButton1Click)
+				wait(0.3)
+				firesignal(ItemsCloseButton.MouseButton1Click)
+			end
+		else
+			print("")
+			warn("**** FindItem() **** Player Don't Have "..ItemType.." Type!")
+			print("")
 		end
-	end
-	if ItemsHolder.Visible == true then
-		firesignal(InventoryButton.MouseButton1Click)
-	end
+		if ItemsHolder.Visible == true then
+			firesignal(InventoryButton.MouseButton1Click)
+		end
+	end)
 	wait(0.2)
 	Items.Enabled = true
 	return Resut, button
 end
-local CounterGetGC
+
 Map = workspace:WaitForChild("Map")
 Tiles = Map:WaitForChild("Tiles")
 
@@ -715,11 +731,7 @@ task.spawn(function()
 	end
 end)
 
-Walkfaster = false
-NewBodyPosition = nil
-NewFakeCamPart = nil
-NewModel = nil
-WalkfasterSpeed = 1
+Walkfaster, NewBodyPosition, NewFakeCamPart, NewModel, WalkfasterSpeed = false, nil, nil, nil, 1
 Tabs.Mode1:Toggle({
 	Title = Translate("เดินวาร์ป ( เดินเร็วขึ้น )", "Tp walk"),
 	Value = false,
@@ -809,13 +821,7 @@ task.spawn(function()
 								if player.Backpack:FindFirstChild("Fists") then
 									local Fist = player.Backpack:FindFirstChild("Fists")
 									Fist.Parent = character
-									CounterTable = nil
-									for _, obj in ipairs(getgc(true)) do
-										if type(obj) == "table" and rawget(obj, "event") and rawget(obj, "func") then
-											CounterTable = obj
-											break
-										end
-									end
+									CounterTable = GetgcFuntion()
 									CounterTable.event += 1
 									Send:FireServer(CounterTable.event,"melee_attack",
 										Fist,{v},CFrame.new(v.Character.HumanoidRootPart.Position),0.9)
@@ -875,15 +881,46 @@ Tabs.Mode1:Button({
 
 Tabs.Mode1:Slider({
 	Title = Translate("ปรับเฟรมเรท", "Set Fps"),
-	Value = {
-		Min = 5,
-		Max = 120,
-		Default = 60,
-	},
+	Value = {Min = 5,Max = 120,Default = 60,},
 	Callback = function(value)
 		pcall(function()
 			setfpscap(tonumber(value))
 		end)
+	end
+})
+
+local RagdollData = {Block = false,Anti = nil,Send = nil}
+getgenv().RagdollBlock = false
+for _, obj in ipairs(getgc(true)) do
+	if type(obj) == "table" and rawget(obj, "event") and rawget(obj, "func") then
+		RagdollData.Anti = obj
+		break
+	end
+end
+if RagdollData.Anti then
+	RagdollData.Send = game:GetService("ReplicatedStorage").Remotes.Send
+	task.spawn(function()
+		while task.wait(0.5) do
+			if getgenv().RagdollBlock then
+				RagdollData.Anti.event += 1
+				RagdollData.Send:FireServer(RagdollData.Anti.event, "end_ragdoll_early")
+				RagdollData.Anti.event += 1
+				RagdollData.Send:FireServer(RagdollData.Anti.event, "clear_ragdoll")
+			end
+		end
+	end)
+end
+AntiRagdoll = false
+Tabs.Mode1:Toggle({
+	Title = Translate("ตัวไม่ล้ม", "Anti AFK"),
+	Value = false,
+	Callback = function(state)
+		AntiRagdoll = state
+		if AntiRagdoll then
+			getgenv().RagdollBlock = true
+		else
+			getgenv().RagdollBlock = false
+		end
 	end
 })
 
@@ -904,6 +941,7 @@ Tabs.Mode1:Button({
 		})
 	end,
 })
+
 
 Tabs.Mode1:Button({
 	Title = "EquipItemInInventory",
@@ -983,6 +1021,7 @@ Tabs.Mode2:Toggle({
 		end
 	end
 })
+
 AutoReSpawn = false
 Tabs.Mode2:Toggle({
 	Title = Translate("😇 ออโต้เกิดใหม่", "😇 Auto Respawn"),
@@ -1037,12 +1076,7 @@ task.spawn(function()
 				task.wait(1)
 			until DeathScreenHolder.Visible == false or StuckRespawn >= 5
 			if DeathScreenHolder.Visible == true then
-				for _, obj in ipairs(getgc(true)) do
-					if type(obj) == "table" and rawget(obj, "event") and rawget(obj, "func") then
-						CounterTable = obj
-						break
-					end
-				end
+				CounterTable = GetgcFuntion()
 				CounterTable.event += 1
 				Send:FireServer(CounterTable.event,"death_screen_request_respawn")
 			end
@@ -1087,14 +1121,16 @@ Section = Tabs.Mode2:Section({
 })
 Section:SetTitle(Translate("💸 ออโต้ฝากเงิน", "💸 Auto deposit"))
 
-Depositing = false
-AutoDepositMoney = false
+Depositing, AutoDepositMoney = false, false
 Tabs.Mode2:Toggle({
 	Title = Translate("เริ่มทำงาน", "Start working"),
 	Value = false,
 	Callback = function(state)
+		task.wait(1)
 		AutoDepositMoney = state
 		if AutoDepositMoney == false then
+			UsePathFinding = false
+			task.wait(1)
 			UsePathFinding = false
 		end
 	end
@@ -1103,26 +1139,26 @@ Tabs.Mode2:Toggle({
 DepositMoneyWhen = 500
 Tabs.Mode2:Slider({
 	Title = Translate("จำนวนที่ต้องการฝาก", "Amount to be deposited"),
-	Value = {
-		Min = 50,
-		Max = 10000,
-		Default = 500,
-	},
+	Value = {Min = 50,Max = 10000,Default = 500,},
 	Callback = function(value)
 		DepositMoneyWhen = tonumber(value)
 	end
 })
 
+Get = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Get")
 local ATMs = workspace:WaitForChild("Map"):WaitForChild("Props"):WaitForChild("ATMs")
-local ATMNear = nil
-local HowNearATM = math.huge
-local AreaPart = nil
-local SurfaceGuiATM = nil
+local ATMNear, HowNearATM, AreaPart, SurfaceGuiATM, ProximityATM = nil, math.huge, nil, nil, nil
+
+--local ATMCook, ATMShelf, ATMMop = Vector3.new(225, 258, 487), Vector3.new(94, 258, 166), Vector3.new(179, 258, -239)
+
 local function NearATM()
+	
 	ATMNear = nil
 	HowNearATM = math.huge
 	AreaPart = nil
 	SurfaceGuiATM = nil
+	ProximityATM = nil
+	
 	for i,v in ipairs(ATMs:GetChildren()) do
 		if v:FindFirstChild("Area") then
 			local Area = v:FindFirstChild("Area")
@@ -1130,27 +1166,44 @@ local function NearATM()
 			if Dis < HowNearATM then
 				if v and Area then
 					for i2,v2 in ipairs(v:GetDescendants()) do
-						if v2.Name == "Screen" and v2:IsA("SurfaceGui") and v2:FindFirstChild("Text") then
-							if v2.Enabled == false then
-								HowNearATM = Dis
-								ATMNear = v
-								AreaPart = Area
-								SurfaceGuiATM = v2
-							end
+						if v2.Name == "Screen" and v2:IsA("SurfaceGui") then
+							HowNearATM = Dis
+							ATMNear = v
+							AreaPart = Area
+							SurfaceGuiATM = v2
+						elseif v2:IsA("ProximityPrompt") then
+							ProximityATM = v2						
 						end
 					end
 				end
 			end
 		end
 	end
-	return HowNearATM, ATMNear, AreaPart, SurfaceGuiATM
+	return HowNearATM, ATMNear, AreaPart, SurfaceGuiATM, ProximityATM
 end
 
-local Get = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Get")
 local function GotoNearATM()
-	local GoFinish = false
+	local GoFinish, SomtankHilight = false, nil
 	repeat
 		local HowNearATM, ATMNear, AreaPart, SurfaceGuiATM = NearATM()
+		if not ATMNear:FindFirstChildOfClass("SomtankTargetHilight") then
+			local iasdjk = Instance.new("Highlight", ATMNear)
+			iasdjk.Name = "SomtankTargetHilight"
+			iasdjk.OutlineTransparency = 1
+			iasdjk.FillColor = Color3.new(0.482353, 0.223529, 1)
+			SomtankHilight = iasdjk
+		end
+		if SurfaceGuiATM.Enabled == true then
+			repeat
+				wait(1)
+			until SurfaceGuiATM.Enabled == false
+		end
+		
+		Depositing = true
+		UsePathFinding = false
+		task.wait(1)
+		UsePathFinding = false
+		
 		if AreaPart and SurfaceGuiATM and GoFinish == false then
 			local targetPosition = AreaPart.Position + Vector3.new(0,-4,0)
 			UsePathFinding = true
@@ -1158,13 +1211,7 @@ local function GotoNearATM()
 			humanoid = character:FindFirstChildOfClass("Humanoid")
 			HMNRT = character:FindFirstChild("HumanoidRootPart")
 			pcall(function()
-				CounterTable = nil
-				for _, obj in ipairs(getgc(true)) do
-					if type(obj) == "table" and rawget(obj, "event") and rawget(obj, "func") then
-						CounterTable = obj
-						break
-					end
-				end
+				CounterTable = GetgcFuntion()
 				CounterTable.event += 1
 				Send:FireServer(CounterTable.event,"set_sprinting_1",true)
 			end)
@@ -1281,11 +1328,7 @@ local function GotoNearATM()
 					success = attemptWarp(targetPosition)
 				else
 					local currentPos = HMNRT.Position
-					local escapeSteps = splitWaypoint(currentPos, currentPos + Vector3.new(
-						math.random(-6, 6),
-						2,
-						math.random(-6, 6)
-						), 3)
+					local escapeSteps = splitWaypoint(currentPos, currentPos + Vector3.new(math.random(-6, 6),2,math.random(-6, 6)),3)
 					for _, escapePos in ipairs(escapeSteps) do
 						if UsePathFinding == false then break end
 						if UserHurt == true then break end
@@ -1299,33 +1342,20 @@ local function GotoNearATM()
 				end
 			end
 			pcall(function()
-				CounterTable = nil
-				for _, obj in ipairs(getgc(true)) do
-					if type(obj) == "table" and rawget(obj, "event") and rawget(obj, "func") then
-						CounterTable = obj
-						break
-					end
-				end
+				CounterTable = GetgcFuntion()
 				CounterTable.event += 1
 				Send:FireServer(CounterTable.event,"set_sprinting_1",false)
 			end)
 			if IsNear(HMNRT.Position, targetPosition, 5) then
 				GoFinish = true
 				repeat
-					for _, obj in ipairs(getgc(true)) do
-						if type(obj) == "table" and rawget(obj, "event") and rawget(obj, "func") then
-							CounterGetGC = obj
-							break
-						end
-					end
-					CounterGetGC.func += 1
-					Get:InvokeServer(CounterGetGC.func, "transfer_funds", "hand", "bank", DepositMoneyWhen)
+					CounterTable = GetgcFuntion()
+					CounterTable.func += 1
+					Get:InvokeServer(CounterTable.func, "transfer_funds", "hand", "bank", DepositMoneyWhen)
 					if PlayerMoney < DepositMoneyWhen then
 						WindUI:Notify({
 							Title = "ฝากเงินสำเร็จ",
-							Content = "คุณได้ทำการฝากเงิน",
-							Duration = 5,
-						})
+							Content = "คุณได้ทำการฝากเงิน",Duration = 5,})
 						sendMoneyToDiscord(player.Name, DepositMoneyWhen)
 					end
 					task.wait(0.5)
@@ -1334,16 +1364,15 @@ local function GotoNearATM()
 		end
 		task.wait(0.1)
 	until GoFinish == true
+	if SomtankHilight then
+		SomtankHilight:Destroy()
+	end
 end
 
 task.spawn(function()
 	while true do
 		if AutoDepositMoney == true then
 			if PlayerMoney >= DepositMoneyWhen then
-				Depositing = true
-				UsePathFinding = false
-				task.wait(1)
-				UsePathFinding = false
 				repeat
 					local GotoATM = GotoNearATM()
 					task.wait(1)
@@ -1364,13 +1393,14 @@ Section = Tabs.Mode2:Section({
 })
 Section:SetTitle(Translate("💳 ออโต้ปล้นเอทีเอ็ม ( เลเวล 10+ )", "💳 Auto Hack ATM ( Level 10+ )"))
 
+Bin_ATM = Instance.new("Folder", workspace)
 ATM_Farm = false
 Tabs.Mode2:Toggle({
 	Title = Translate("เริ่มทำงาน", "Start working"),
 	Value = false,
 	Callback = function(state) 
 		ATM_Farm = state
-		if Cook_Farm == true then
+		if ATM_Farm == true then
 			WindUI:Notify({
 				Title = "คุณได้เปิดฟังชั่น",
 				Content = "ออโต้ปล้นเอทีเอ็ม",
@@ -1396,26 +1426,210 @@ Tabs.Mode2:Toggle({
 		end
 	end
 })
---PlayerGui.KeybindHints.KeybindHintsHolder.VehicleOptions.LockVehicleButton
-local LockVehicleButton = plrGui:WaitForChild("KeybindHints"):WaitForChild("KeybindHintsHolder"):WaitForChild("VehicleOptions"):WaitForChild("LockVehicleButton")
+
+LockVehicleButton = plrGui:WaitForChild("KeybindHints"):WaitForChild("KeybindHintsHolder"):WaitForChild("VehicleOptions"):WaitForChild("LockVehicleButton")
+
+local function SmartVehicleGoto(targetPosition, VehicleMain, SurfaceGuiATM)
+	
+	UsePathFinding = true
+	
+	local function createPathVehivle(startPos, endPos)
+		local path = PathfindingService:CreatePath({
+			AgentRadius = 1, AgentHeight = 7, AgentCanJump = true
+		})
+		local success = pcall(function()
+			path:ComputeAsync(startPos, endPos)
+		end)
+		if success and path.Status == Enum.PathStatus.Success then
+			return path:GetWaypoints()
+		end
+		return nil
+	end
+	
+	local function splitWaypoint(startPos, endPos, maxDistance)
+		local direction = (endPos - startPos)
+		local distance = direction.Magnitude
+		if distance <= maxDistance then
+			return {endPos}
+		end
+		local steps = math.ceil(distance / maxDistance)
+		local stepVector = direction / steps
+		local positions = {}
+		for i = 1, steps do
+			if UsePathFinding == false then break end
+			if UserHurt == true then break end
+			local pos = startPos + (stepVector * i)
+			table.insert(positions, pos)
+		end
+		return positions
+	end
+	local function warpPath(waypoints)
+		local waypointsbackup = waypoints
+		local currentPos = VehicleMain.PrimaryPart.Position
+		for i, waypoint in ipairs(waypoints) do
+			if UsePathFinding == false then break end
+			if UserHurt == true then break end
+			if SurfaceGuiATM then
+				if SurfaceGuiATM.Enabled == true then break end
+			end
+			if #NotificationS:GetChildren() < 5 then
+				local targetPos = waypoint.Position
+				local isJumpPoint = waypoint.Action == Enum.PathWaypointAction.Jump
+
+				local shortSteps = splitWaypoint(currentPos, targetPos, 2.7)
+
+				workspace.Gravity = 0
+
+				for j, stepPos in ipairs(shortSteps) do
+					if UsePathFinding == false then break end
+					if UserHurt == true then break end
+					if SurfaceGuiATM then
+						if SurfaceGuiATM.Enabled == true then break end
+					end
+
+					if isJumpPoint and j == 1 then
+						local jumpHeight = 16
+						local jumpPos = Vector3.new(currentPos.X, currentPos.Y + jumpHeight, currentPos.Z)
+						VehicleMain.PrimaryPart.CFrame = CFrame.new(jumpPos)
+						wait(0.1)
+					end
+					local safeHeight = stepPos.Y
+					if isJumpPoint then
+						safeHeight = math.max(stepPos.Y, currentPos.Y) + math.random(1, 3)
+					else
+						safeHeight = stepPos.Y + 0.5
+					end
+					local safePos = Vector3.new(stepPos.X, safeHeight, stepPos.Z)
+					if not isSafePosition(safePos) then
+						for attempt = 1, 3 do
+							local offset = Vector3.new(math.random(-2, 2),2,math.random(-2, 2))
+							local testPos = safePos + offset
+							if isSafePosition(testPos) then
+								safePos = testPos
+								break
+							end
+						end
+					end
+
+					local rootPos = VehicleMain.PrimaryPart.Position
+					local direction = (safePos - rootPos)
+					direction = Vector3.new(direction.X, 0, direction.Z).Unit
+					VehicleMain.PrimaryPart.CFrame = CFrame.lookAt(rootPos, rootPos + direction)
+
+					currentPos = safePos
+					wait()
+					VehicleMain.PrimaryPart.CFrame = CFrame.new(safePos)
+
+					if isJumpPoint and j == #shortSteps then
+						wait(0.1)
+						local landPos = Vector3.new(safePos.X, targetPos.Y + 1, safePos.Z)
+						if isSafePosition(landPos) then
+							VehicleMain.PrimaryPart.CFrame = CFrame.new(landPos)
+							currentPos = landPos
+						end
+					end
+
+					workspace.Gravity = 90
+
+				end
+			end
+		end
+		local finalDistance = (VehicleMain.PrimaryPart.Position - targetPosition).Magnitude
+		return finalDistance <= 3
+	end
+	local function attemptWarp(destination)
+		local waypoints = createPathVehivle(VehicleMain.PrimaryPart.Position, destination)
+		if waypoints then
+			return warpPath(waypoints)
+		end
+		return false
+	end
+	local success = attemptWarp(targetPosition)
+	local attempts = 0
+	while not success and not IsNear(VehicleMain.PrimaryPart.Position, targetPosition, 5) do
+		wait(0.1)
+		if UsePathFinding == false then break end
+		if UserHurt == true then break end
+		if SurfaceGuiATM then
+			if SurfaceGuiATM.Enabled == true then break end
+		end
+		if #NotificationS:GetChildren() > 5 then
+			task.wait(0.5)
+			WindUI:Notify({Title = "Walk Path Reset",Content = "รีเซ็ทการเดิน "..attempts,Duration = 5,	})
+			break
+		end
+		attempts = attempts + 1
+		local randomPos = getRandomPosition(targetPosition, 5)
+		local reachedRandom = attemptWarp(randomPos)
+		if reachedRandom then
+			wait(0.5)
+			success = attemptWarp(targetPosition)
+		else
+			local currentPos = VehicleMain.PrimaryPart.Position
+			local escapeSteps = splitWaypoint(currentPos, currentPos + Vector3.new(math.random(-6, 6),2,math.random(-6, 6)),3)
+			for _, escapePos in ipairs(escapeSteps) do
+				if UsePathFinding == false then break end
+				if UserHurt == true then break end
+				if SurfaceGuiATM then
+					if SurfaceGuiATM.Enabled == true then break end
+				end
+				VehicleMain.PrimaryPart.CFrame = CFrame.new(escapePos)
+				wait(0.1)
+			end
+		end
+	end
+end
+
 task.spawn(function()
-	local PlayerVehicle, Vehicles = nil, workspace:WaitForChild("Vehicles")
+	local SliderMinigame = require(game.ReplicatedStorage:FindFirstChild("Modules"):FindFirstChild("Game"):FindFirstChild("Minigames"):FindFirstChild("SliderMinigame"))
+	
+	local PlayerVehicle, VehicleMain, Vehicles, DriveProx, PlayerHaveHackTool, ATMPromp, ATMHIL, JobToolName = nil, nil, workspace:WaitForChild("Vehicles"), nil, false, nil, nil, "Basic Hack Tool"
+	
+	Bin_ATM.Name = "Bin_ATM"
+	SliderMinigame.enabled.hook(function(a7)
+		if a7 then task.wait(1.4) SliderMinigame.win:Fire(true) end
+	end)
 	
 	local function FindVehicleUser()
 		for i,v in ipairs(Vehicles:GetChildren()) do
 			if v:IsA("Model") and v:GetAttribute("OwnerUserId") == player.UserId then
-				if v:FindFirstChildOfClass("VehicleSeat") then
-					local VehicleSeat = v:FindFirstChildOfClass("VehicleSeat")
+				if v:FindFirstChild("Chassis") and v:FindFirstChild("Chassis"):FindFirstChild("DrivePromptAttachment") then
+					PlayerVehicle = v
+					Chassis = v:FindFirstChild("Chassis")
+					DrivePromptAttachment = v:FindFirstChild("Chassis"):FindFirstChild("DrivePromptAttachment")
 					repeat
-						if IsNear(HMNRT.Position, VehicleSeat.Position, 5) then
-							VehicleSeat:Sit(humanoid)
+						if IsNear(HMNRT.Position, Chassis.Position, 7) and DrivePromptAttachment:FindFirstChildOfClass("ProximityPrompt") then
+							DrivePromp = DrivePromptAttachment:FindFirstChildOfClass("ProximityPrompt")
+							DriveProx = DrivePromp
+							fireproximityprompt(DrivePromp)
 						else
-							local smartWalkToJobBegin =	smartWarpTo(VehicleSeat.Position + Vector3.new(0,-1,0))
+							smartWarpTo(Chassis.Position + Vector3.new(0,1.5,0))
 						end
 						wait(0.1)
 					until humanoid.Sit == true
-					PlayerVehicle = VehicleSeat
+					VehicleMain = Chassis.Parent
 				end
+			end
+		end
+	end
+	
+	local function SetVehicleForGo(input)
+		if input and input == true then
+			for i,v in ipairs(Bin_ATM:GetChildren()) do
+				v:Destroy()
+			end
+			for i,v in ipairs(VehicleMain:GetDescendants()) do
+				if v:IsA("BasePart") then
+					local nWeldConstraint = Instance.new("WeldConstraint")
+					nWeldConstraint.Part0 = v
+					nWeldConstraint.Part1 = VehicleMain.PrimaryPart
+					nWeldConstraint.Parent = Bin_ATM
+					nWeldConstraint.Name = "SomtankWeld"..i
+				end
+			end
+		else
+			for i,v in ipairs(Bin_ATM:GetChildren()) do
+				v:Destroy()
 			end
 		end
 	end
@@ -1424,28 +1638,209 @@ task.spawn(function()
 		if ATM_Farm then
 			repeat
 				
-				FindVehicleUser()
-				
-				if PlayerVehicle == nil then
+				--FindVehicleUser()
+				if VehicleMain == nil then
 					local FindVehicle = FindVehicle("bike", true)
 					if FindVehicle then
 						FindVehicleUser()
 					end
-				end
-				
-				if PlayerVehicle then
-					
-					--Lock image    =  rbxassetid://6249640130
-					--UnLock image  =  rbxassetid://14061898347
-					
+				else
 					LockVehicleImageLabel = LockVehicleButton:WaitForChild("LockVehicleImageLabel")
 					if LockVehicleImageLabel and LockVehicleImageLabel.Image == "rbxassetid://14061898347" then
-						print("******* Lock User Vehicle")
 						firesignal(LockVehicleButton.MouseButton1Click)
 					end
+					
+					PlayerHaveHackTool = false
+					
+					ConsumableBuy.Enabled = false
+					
+					ATMNear = nil
+					HowNearATM = math.huge
+					AreaPart = nil
+					SurfaceGuiATM = nil
+					ProximityATM = nil
+
+					for i,v in ipairs(ATMs:GetChildren()) do
+						if v:FindFirstChild("Area") then
+							local Area = v:FindFirstChild("Area")
+							local Dis = (HMNRT.Position - Area.Position).Magnitude
+							if Dis < HowNearATM then
+								if v and Area then
+									for i2,v2 in ipairs(v:GetDescendants()) do
+										if v2.Name == "Screen" and v2:IsA("SurfaceGui") and v2:FindFirstChild("Text") then
+											if v2.Enabled == false then
+												HowNearATM = Dis
+												ATMNear = v
+												AreaPart = Area
+												SurfaceGuiATM = v2
+												ProximityATM = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+											end
+										end
+									end
+								end
+							end
+						end
+					end
+					
+					if DriveProx then
+						fireproximityprompt(DriveProx)
+					end
+					
+					if PlayerMoney < 10 then
+						SetVehicleForGo(true)
+						SmartVehicleGoto(AreaPart.Position + Vector3.new(0,-2,0), VehicleMain, SurfaceGuiATM)
+						if IsNear(HMNRT.Position, AreaPart.Position + Vector3.new(0,-2,0), 7) then
+							humanoid.Jump = true
+							if humanoid.Sit then
+								humanoid.Sit = false
+							end
+							HMNRT.CFrame = CFrame.new(AreaPart.Position)
+							CounterTable = GetgcFuntion()
+							CounterTable.func += 1
+							Get:InvokeServer(CounterTable.func,"transfer_funds","bank","hand",126)
+						end
+					else
+						if UserSkill_Swiper >= 0 and UserSkill_Swiper < 12 and PlayerMoney >= 10 then
+							print("***** Player Level > 0 ")
+							if FindItem("Basic Hack Tool") == false then
+								print("***** Player Don't have Basic Hack Tool ")
+								if PlayerMoney >= 10 then
+									print("***** Player Can buy Basic Hack Tool / Goto Shop! ")
+									SetVehicleForGo(true)
+									SmartVehicleGoto(workspace.ShopZone_Illegal.Position + Vector3.new(0,-2,0), VehicleMain)
+									if IsNear(HMNRT.Position, workspace.ShopZone_Illegal.Position, 5) then
+										fireproximityprompt(workspace.ShopZone_Illegal.ProximityPrompt)
+										wait(0.5)
+										for i=1,15 do
+											if PlayerMoney >= 10 then
+												BuyHardwareStore("Basic Hack Tool")
+											end
+											wait(0.5)
+										end
+										PlayerHaveHackTool = true
+									end
+								end
+							else
+								JobToolName = "Basic Hack Tool"
+								PlayerHaveHackTool = true
+							end
+						elseif UserSkill_Swiper >= 12 and UserSkill_Swiper < 50 and PlayerMoney >= 150 then
+							print("***** Player Level > 12 ")
+							if FindItem("Pro Hack Tool") == false then
+								print("***** Player Don't have Pro Hack Tool ")
+								if PlayerMoney >= 150 then
+									print("***** Player Can buy Pro Hack Tool / Goto buy")
+									SetVehicleForGo(true)
+									SmartVehicleGoto(workspace.ShopZone_Illegal.Position + Vector3.new(0,-2,0), VehicleMain)
+									if IsNear(HMNRT.Position, workspace.ShopZone_Illegal.Position, 5) then
+										fireproximityprompt(workspace.ShopZone_Illegal.ProximityPrompt)
+										wait(0.5)
+										for i=1,15 do
+											if PlayerMoney >= 10 then
+												BuyHardwareStore("Pro Hack Tool")
+											end
+											wait(0.5)
+										end
+										PlayerHaveHackTool = true
+									end
+								end
+							else
+								JobToolName = "Pro Hack Tool"
+								PlayerHaveHackTool = true
+							end
+						elseif UserSkill_Swiper >= 50 and UserSkill_Swiper < 90 and PlayerMoney >= 350 then
+							print("***** Player Level > 50 ")
+							if FindItem("Ultimate Hack Tool") == false then
+								print("***** Player Don't have Ultimate Hack Tool ")
+								if PlayerMoney >= 350 then
+									print("***** Player Can buy Ultimate Hack Tool / Goto buy")
+									SetVehicleForGo(true)
+									SmartVehicleGoto(workspace.ShopZone_Illegal.Position + Vector3.new(0,-2,0), VehicleMain)
+									if IsNear(HMNRT.Position, workspace.ShopZone_Illegal.Position, 5) then
+										fireproximityprompt(workspace.ShopZone_Illegal.ProximityPrompt)
+										wait(0.5)
+										for i=1,15 do
+											if PlayerMoney >= 10 then
+												BuyHardwareStore("Ultimate Hack Tool")
+											end
+											wait(0.5)
+										end
+										PlayerHaveHackTool = true
+									end
+								end
+							else
+								JobToolName = "Ultimate Hack Tool"
+								PlayerHaveHackTool = true
+							end
+						elseif UserSkill_Swiper > 90 and PlayerMoney >= 550 then
+							print("***** Player Level > 90 ")
+							if FindItem("Quantum Hack Tool") == false then
+								print("***** Player con't have Quantum Hack Tool ")
+								if PlayerMoney >= 550 then
+									print("***** Player Can buy Quantum Hack Tool / Goto buy")
+									SetVehicleForGo(true)
+									SmartVehicleGoto(workspace.ShopZone_Illegal.Position + Vector3.new(0,-2,0), VehicleMain)
+									if IsNear(HMNRT.Position, workspace.ShopZone_Illegal.Position, 5) then
+										fireproximityprompt(workspace.ShopZone_Illegal.ProximityPrompt)
+										wait(0.5)
+										for i=1,15 do
+											if PlayerMoney >= 10 then
+												BuyHardwareStore("Quantum Hack Tool")
+											end
+											wait(0.5)
+										end
+										PlayerHaveHackTool = true
+									end
+								end
+							else
+								JobToolName = "Quantum Hack Tool"
+								PlayerHaveHackTool = true
+							end
+						end
+
+
+						if PlayerHaveHackTool then
+							
+							if ATMNear and not ATMNear:FindFirstChild("STHIL") then
+								local NewjIJ = Instance.new("Highlight", ATMNear)
+								NewjIJ.FillColor = Color3.new(0.0509804, 1, 0)
+								ATMHIL = NewjIJ
+							end
+
+							if AreaPart and SurfaceGuiATM then
+								SetVehicleForGo(true)
+								SmartVehicleGoto(AreaPart.Position + Vector3.new(0,-2,0), VehicleMain, SurfaceGuiATM)
+								if IsNear(HMNRT.Position, AreaPart.Position + Vector3.new(0,-2,0), 7) then
+									humanoid.Jump = true
+									if humanoid.Sit then
+										humanoid.Sit = false
+									end
+									HMNRT.CFrame = CFrame.new(AreaPart.Position)
+									if ProximityATM then
+										task.wait(0.7)
+										fireproximityprompt(ProximityATM)
+										task.wait(0.7)
+										local b1 = require(game.ReplicatedStorage.Modules.Core.UI)
+										local b2 = b1.get("ATMHackButton", true)
+										if b2 and b2.Visible and b2:IsDescendantOf(player.PlayerGui) then
+											task.wait(0.25)
+											firesignal(b2.MouseButton1Click)
+											task.wait(2.5)
+										end
+									end
+								end
+								
+							end
+
+						end
+					end
+					
+					task.wait(0.1)
 				end
-				
-				wait(1)
+				if ATMHIL then
+					ATMHIL:Destroy()
+				end
+				wait(0.1)
 			until ATM_Farm == false
 		end
 		wait(1)
@@ -1508,6 +1903,7 @@ task.spawn(function()
 	
 	local function EquiNewJobTool()
 		if not Change_Job_Tool_Level then return end
+		ConsumableBuy.Enabled = false
 		if UserSkill_Cook >= 10 and UserSkill_Cook < 25 then
 			print("***** Player Level > 10 ")
 			local BronzeSkillet = FindItem("BronzeSkillet")
@@ -1515,7 +1911,7 @@ task.spawn(function()
 				print("***** Player Don't have Bronze Skillet ")
 				if CanBuyHardwareStore("Bronze Skillet") then
 					print("***** Player Can buy Bronze Skillet / Goto Shop! ")
-					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
+					smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
 					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
 						BuyHardwareStore("Bronze Skillet")
 					end
@@ -1528,7 +1924,7 @@ task.spawn(function()
 				print("***** Player Don't have SilverSkillet ")
 				if CanBuyHardwareStore("Silver Skillet") then
 					print("***** Player Can buy SilverSkillet / Goto buy")
-					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
+					smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
 					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
 						BuyHardwareStore("Silver Skillet")
 					end
@@ -1541,7 +1937,7 @@ task.spawn(function()
 				print("***** Player con't have GoldenSkillet ")
 				if CanBuyHardwareStore("Golden Skillet") then
 					print("***** Player Can buy GoldenSkillet / Goto buy")
-					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
+					smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
 					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
 						BuyHardwareStore("Golden Skillet")
 					end
@@ -1567,20 +1963,16 @@ task.spawn(function()
 				end
 				
 				repeat
-					local smartWalkToJobBegin =	smartWarpTo(SteakHouseBeacon.TouchPart.Position + Vector3.new(0,1,0))
+					smartWarpTo(SteakHouseBeacon.TouchPart.Position + Vector3.new(0,1,0))
 					if IsNear(HMNRT.Position, SteakHouseBeacon.TouchPart.Position, 5) then
 						if JobApplicationFrame.Visible == true then
 							JobApplicationFrame.Visible = false
 						end
-						for _, obj in ipairs(getgc(true)) do
-							if type(obj) == "table" and rawget(obj, "event") and rawget(obj, "func") then
-								CounterGetGC = obj
-								break
-							end
-						end
-						CounterGetGC.event += 1
-						Send:FireServer(CounterGetGC.event,"apply_for_job",SteakHouseBeacon)
+						CounterTable = GetgcFuntion()
+						CounterTable.event += 1
+						Send:FireServer(CounterTable.event,"apply_for_job",SteakHouseBeacon)
 						CanCheckTool = false
+						ConsumableBuy.Enabled = true
 					end
 					wait(0.1)
 				until player:GetAttribute("Job") == "steakhouse_cook" or Stock_Farm == false or Depositing == true or UserHurt == true
@@ -1605,7 +1997,7 @@ task.spawn(function()
 						CanCheckTool = true
 					end
 					
-					local smartWalkToJobBegin =	smartWarpTo(Area.Position + Vector3.new(0,-4,2))
+					smartWarpTo(Area.Position + Vector3.new(0,-4,2))
 					if IsNear(HMNRT.Position, Area.Position, 5) and Fridge then
 						fireproximityprompt(Fridge)
 					end
@@ -1619,7 +2011,6 @@ task.spawn(function()
 					
 					if character:FindFirstChildOfClass("Tool") and player:GetAttribute("Job") == "steakhouse_cook" then
 						repeat
-
 							StuckCook = 0
 							repeat
 								StuckCook = StuckCook + 0.3
@@ -1630,7 +2021,7 @@ task.spawn(function()
 
 							if player:GetAttribute("Job") == "steakhouse_cook" and workspace:FindFirstChild("Beacon") and workspace:FindFirstChild("Beacon"):FindFirstChild("Base") then
 								local Beacon = workspace:FindFirstChild("Beacon"):FindFirstChild("Base")
-								local smartWalkToJobBegin =	smartWarpTo(Beacon.Position + Vector3.new(0,1,0))		
+								smartWarpTo(Beacon.Position + Vector3.new(0,1,0))
 
 								if IsNear(HMNRT.Position, Beacon.Position, 5) then
 									repeat
@@ -1653,12 +2044,13 @@ task.spawn(function()
 										pcall(function()
 											firesignal(FinishBar.MouseButton1Click)
 											CanCheckTool = false
+											ConsumableBuy.Enabled = true
 										end)
 									until ProgressBarFrame.Visible == false or player:GetAttribute("Job") ~= "shelf_stocker" 
 										or Depositing == true or UserHurt == true
 								end
 							end
-
+							wait(0.1)
 						until not character:FindFirstChildOfClass("Tool") or Depositing == true or UserHurt == true or player:GetAttribute("Job") ~= "steakhouse_cook" 
 					end
 					wait(0.1)
@@ -1727,19 +2119,14 @@ task.spawn(function()
 					until Depositing == false and UserHurt == false
 				end
 				repeat
-					local smartWalkToJobBegin =	smartWarpTo(JobBegin_Quick11Beacon.Position + Vector3.new(0,1,0))
+					smartWarpTo(JobBegin_Quick11Beacon.Position + Vector3.new(0,1,0))
 					if IsNear(HMNRT.Position, JobBegin_Quick11Beacon.Position, 5) then
 						if JobApplicationFrame.Visible == true then
 							JobApplicationFrame.Visible = false
 						end
-						for _, obj in ipairs(getgc(true)) do
-							if type(obj) == "table" and rawget(obj, "event") and rawget(obj, "func") then
-								CounterGetGC = obj
-								break
-							end
-						end
-						CounterGetGC.event += 1
-						Send:FireServer(CounterGetGC.event,"apply_for_job",Quick11Beacon)
+						CounterTable = GetgcFuntion()
+						CounterTable.event += 1
+						Send:FireServer(CounterTable.event,"apply_for_job",Quick11Beacon)
 					end
 					wait(0.1)
 				until player:GetAttribute("Job") == "shelf_stocker" or Stock_Farm == false or Depositing == true or UserHurt == true
@@ -1766,7 +2153,7 @@ task.spawn(function()
 						end
 						
 						if not character:FindFirstChildOfClass("Tool") and player:GetAttribute("Job") == "shelf_stocker" then
-							local smartWalkToJobBegin =	smartWarpTo(TakeBoxPosition + Vector3.new(0,1,0))					
+							smartWarpTo(TakeBoxPosition + Vector3.new(0,1,0))					
 							if IsNear(HMNRT.Position, TakeBoxPosition, 3) then
 								
 								if Shelf_LevelKill >= 0 then
@@ -1811,7 +2198,7 @@ task.spawn(function()
 						
 						if player:GetAttribute("Job") == "shelf_stocker" and workspace:FindFirstChild("Beacon") and workspace:FindFirstChild("Beacon"):FindFirstChild("Base") then
 							local Beacon = workspace:FindFirstChild("Beacon"):FindFirstChild("Base")
-							local smartWalkToJobBegin =	smartWarpTo(Beacon.Position + Vector3.new(0,1,0))		
+							smartWarpTo(Beacon.Position + Vector3.new(0,1,0))		
 
 							if IsNear(HMNRT.Position, Beacon.Position, 5) then
 								repeat
@@ -1842,7 +2229,7 @@ end)
 
 Tabs.Mode2:Divider()
 
-Section = Tabs.Mode2:Section({ 
+Section = Tabs.Mode2:Section({
 	Title = "Section",
 	TextXAlignment = "Left",
 	TextSize = 25,
@@ -1887,25 +2274,17 @@ Tabs.Mode2:Toggle({
 task.spawn(function()
 	local Puddles = Map:WaitForChild("Tiles"):WaitForChild("BurgerPlaceTile"):WaitForChild("BurgerPlace"):WaitForChild("Interior"):WaitForChild("Puddles")
 	local StuckMob, NearPart, NearDis, CheckJobTool, CanWork, JobToolName = 0, nil, math.huge, false, false, "Mop"
-	-- local NearPart = nil -- local NearDis = math.huge
-	local HardWarePosition = Vector3.new(-136.4, 254.8, 153.5)
 	
 	local function EquiNewJobTool()
-		if not Change_Job_Tool_Level then return end
-		
-		----*Bronze Mop / lvl.10
-		----*Silver Mop / lvl.25
-		----*Golden Mop / lvl.40
-		----*Diamon Mop / lvl.55
-		
+		if not Change_Job_Tool_Level then return end--- [ Bronze Mop / lvl.10 ] [ Silver Mop / lvl.25 ] [ Golden Mop / lvl.40 ] [ Diamon Mop / lvl.55 ]
+		ConsumableBuy.Enabled = false
 		if UserSkill_Janitor >= 10 and UserSkill_Janitor < 25 then
 			print("***** Player Level > 10 ")
-			local Bronze_Mop = FindItem("Bronze Mop", true)
-			if Bronze_Mop == false then
+			if FindItem("Bronze Mop") == false then
 				print("***** Player Don't have Bronze Mop ")
 				if CanBuyHardwareStore("Bronze Mop") then
 					print("***** Player Can buy Bronze Mop / Goto Shop! ")
-					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
+					smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
 					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
 						BuyHardwareStore("Bronze Mop")
 					end
@@ -1915,12 +2294,11 @@ task.spawn(function()
 			end
 		elseif UserSkill_Janitor >= 25 and UserSkill_Janitor < 40 then
 			print("***** Player Level > 25 ")
-			local Silver_Mop = FindItem("Silver Mop", true)
-			if Silver_Mop == false then
+			if FindItem("Silver Mop") == false then
 				print("***** Player Don't have Silver Mop ")
 				if CanBuyHardwareStore("Silver Mop") then
 					print("***** Player Can buy Silver Mop / Goto buy")
-					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
+					smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
 					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
 						BuyHardwareStore("Silver Mop")
 					end
@@ -1930,12 +2308,11 @@ task.spawn(function()
 			end
 		elseif UserSkill_Janitor >= 40 and UserSkill_Janitor < 55 then
 			print("***** Player Level > 40 ")
-			local Golden_Mop = FindItem("Golden Mop", true)
-			if Golden_Mop == false then
+			if FindItem("Golden Mop") == false then
 				print("***** Player con't have Golden Mop ")
 				if CanBuyHardwareStore("Golden Mop") then
 					print("***** Player Can buy Golden Mop / Goto buy")
-					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
+					smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
 					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
 						BuyHardwareStore("Golden Mop")
 					end
@@ -1945,12 +2322,11 @@ task.spawn(function()
 			end
 		elseif UserSkill_Janitor > 55 then
 			print("***** Player Level > 40 ")
-			local Diamon_Mop = FindItem("Diamon Mop", true)
-			if Diamon_Mop == false then
+			if FindItem("Diamon Mop") == false then
 				print("***** Player con't have Diamon Mop ")
 				if CanBuyHardwareStore("Diamon Mop") then
 					print("***** Player Can buy Diamon Mop / Goto buy")
-					local smartWalkToJobBegin =	smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
+					smartWarpTo(workspace.ShopZone_Hardware.Position + Vector3.new(0,-2,0))
 					if IsNear(HMNRT.Position, workspace.ShopZone_Hardware.Position, 5) then
 						BuyHardwareStore("Diamon Mop")
 					end
@@ -1960,9 +2336,11 @@ task.spawn(function()
 			end
 		end
 	end
+	
 	while true do
 		if Mob_Farm then
 			if player:GetAttribute("Job") ~= "janitor" then
+				
 				if Depositing == true or UserHurt == true then
 					repeat
 						task.wait(0.5)
@@ -1975,24 +2353,19 @@ task.spawn(function()
 				end
 				
 				repeat
-					local smartWalkToJobBegin =	smartWarpTo(JobBegin_BurgePlaceBeacon.Position + Vector3.new(0,1,0))					
+					smartWarpTo(JobBegin_BurgePlaceBeacon.Position + Vector3.new(0,1,0))					
 					if IsNear(HMNRT.Position, JobBegin_BurgePlaceBeacon.Position, 5) then
 						if JobApplicationFrame.Visible == true then
 							JobApplicationFrame.Visible = false
 						end
-						for _, obj in ipairs(getgc(true)) do
-							if type(obj) == "table" and rawget(obj, "event") and rawget(obj, "func") then
-								CounterGetGC = obj
-								break
-							end
-						end
-						CounterGetGC.event += 1
-						Send:FireServer(CounterGetGC.event,"apply_for_job",workspace:WaitForChild("BurgePlaceBeacon"))
+						CounterTable = GetgcFuntion()
+						CounterTable.event += 1
+						Send:FireServer(CounterTable.event,"apply_for_job",workspace:WaitForChild("BurgePlaceBeacon"))
 					end
 					wait(0.1)
-				until player:GetAttribute("Job") == "janitor" or Mob_Farm == false 
-					or Depositing == true or UserHurt == true
+				until player:GetAttribute("Job") == "janitor" or Mob_Farm == false or Depositing == true or UserHurt == true
 				CheckJobTool = false
+				ConsumableBuy.Enabled = true
 				WindUI:Notify({
 					Title = "สมัครงานถูพื้น",
 					Content = "สำเร็จ",
@@ -2000,7 +2373,6 @@ task.spawn(function()
 				})
 			else
 				repeat
-					
 					if JobApplicationFrame.Visible == true and player:GetAttribute("Job") == "janitor" then
 						JobApplicationFrame.Visible = false
 					end
@@ -2009,81 +2381,82 @@ task.spawn(function()
 							task.wait(0.5)
 						until Depositing == false and UserHurt == false
 					end
-					
 					if CheckJobTool == false then
 						EquiNewJobTool()
 						CheckJobTool = true
 					end
-					
-					if JobToolName == "Mop" then
-						if not character:FindFirstChild("Mop") then
-							if player.Backpack:FindFirstChild("Mop") then
-								player.Backpack.Mop.Parent = character
-							end
-						end
-					end
-					
-					NearPart = nil
-					NearDis = math.huge
-					
-					for i,v in ipairs(Puddles:GetChildren()) do
-						CanWork = true
-						if v.Size.X > 4 then
-							
-							----***LargePuddle / lvl.10	----***NastyPuddle / lvl.20
-							----***OilPuddle / lvl.35 ----***ToxicPuddle / lvl.50
-							
-							if v.Name == "LargePuddle" and UserSkill_Janitor < 5 then
-								CanWork = false
-							elseif v.Name == "NastyPuddle" and UserSkill_Janitor < 20 then
-								CanWork = false
-							elseif v.Name == "OilPuddle" and UserSkill_Janitor < 35 then
-								CanWork = false
-							elseif v.Name == "ToxicPuddle" and UserSkill_Janitor < 50 then
-								CanWork = false
-							end
-							
-							if CanWork == true then
-								local dis = (HMNRT.Position - v.Position).Magnitude
-								if dis < NearDis then
-									NearDis = dis
-									NearPart = v
+					warn("           JobToolName ".. JobToolName)
+					if not character:FindFirstChildOfClass("Tool") then
+						if JobToolName == "Mop" then
+							if not character:FindFirstChild("Mop") then
+								if player.Backpack:FindFirstChild("Mop") then
+									player.Backpack.Mop.Parent = character
 								end
 							end
-							
+						else
+							FindItem(JobToolName, true)
 						end
 					end
-					
-					if NearPart then
-						local smartWalkToPuddles = smartWarpTo(NearPart.Position + Vector3.new(0,2,0))
-						StuckMob = 0
-						repeat
-							StuckMob = StuckMob + 0.3
-							task.wait(0.3)
-							if ProgressBarFrame.Visible == false then
-								StuckMob = StuckMob + 5
-							end
-						until NearPart.Size.X < 0.002 or StuckMob >= 15 or NearPart == nil
-							or Depositing == true or Mob_Farm == false or player:GetAttribute("Job") ~= "janitor" or UserHurt == true
-						UsePathFinding = false
-						StuckMob = 0
-						if NearPart and NearPart.Size.X < 0.002 and SomtankInfo_Puddles then
-							NearPart.Parent = SomtankInfo_Puddles
-						end
-						if NearPart and NearPart.Size.X < 0.002 then
-							WindUI:Notify({Title = "ถูพื้น",
-								Content = "สำเร็จ",
-								Duration = 5,})
-						end
-						task.wait(0.1)
-						if SomtankInfo_Puddles and #SomtankInfo_Puddles:GetChildren() > 5 then
-							for _, item in ipairs(SomtankInfo_Puddles:GetChildren()) do
-								if item.Size.X > 4 then
-									item.Parent = Puddles
+					if character:FindFirstChildOfClass("Tool") then
+						NearPart = nil
+						NearDis = math.huge
+						for i,v in ipairs(Puddles:GetChildren()) do
+							CanWork = true
+							if v.Size.X > 4 then--- [ LargePuddle / lvl.5 ] [ NastyPuddle / lvl.20 ] [ OilPuddle / lvl.35 ] [ ToxicPuddle / lvl.50 ]
+								if v.Name == "LargePuddle" and UserSkill_Janitor < 5 then
+									CanWork = false
+								elseif v.Name == "NastyPuddle" and UserSkill_Janitor < 20 then
+									CanWork = false
+								elseif v.Name == "OilPuddle" and UserSkill_Janitor < 35 then
+									CanWork = false
+								elseif v.Name == "ToxicPuddle" and UserSkill_Janitor < 50 then
+									CanWork = false
+								end
+								if CanWork == true then
+									local dis = (HMNRT.Position - v.Position).Magnitude
+									if dis < NearDis then
+										NearDis = dis
+										NearPart = v
+									end
 								end
 							end
+							wait()
 						end
-						CheckJobTool = false
+
+						if NearPart and SomtankInfo_Puddles then
+							smartWarpTo(NearPart.Position + Vector3.new(0,1.5,0))
+							StuckMob = 0
+							repeat
+								StuckMob = StuckMob + 0.3
+								task.wait(0.3)
+								if ProgressBarFrame.Visible == false then
+									StuckMob = StuckMob + 5
+								end
+							until NearPart.Size.X < 0.002 or StuckMob >= 15 or NearPart == nil
+								or Depositing == true or Mob_Farm == false or player:GetAttribute("Job") ~= "janitor" or UserHurt == true
+							UsePathFinding = false--th bug
+							StuckMob = 0
+							if NearPart then
+								NearPart.Parent = SomtankInfo_Puddles
+							end
+							if NearPart and NearPart.Size.X < 0.002 then
+								WindUI:Notify({Title = "ถูพื้น",
+									Content = "สำเร็จ",
+									Duration = 5,})
+							end
+							task.wait(0.1)
+							if #SomtankInfo_Puddles:GetChildren() > 5 then
+								for _, item in ipairs(SomtankInfo_Puddles:GetChildren()) do
+									if item.Size.X > 4 then
+										item.Parent = Puddles
+									end
+								end
+							end
+							NearPart = nil
+							NearDis = math.huge
+							CheckJobTool = false
+							ConsumableBuy.Enabled = true
+						end
 					end
 					task.wait(0.1)
 				until Mob_Farm == false or player:GetAttribute("Job") ~= "janitor" or UserHurt == true
@@ -2312,8 +2685,10 @@ pcall(function()
 		wait(0.03)
 		ConsumableBuy.Enabled = false
 		Camera.CameraType = Enum.CameraType.Scriptable
-		HMNRT.CFrame = workspace.ShopZone_Hardware.CFrame
-		wait(0.03)
+		for i=1,10 do
+			HMNRT.CFrame = workspace.ShopZone_Hardware.CFrame
+			wait(0.01)
+		end
 		HMNRT.CFrame = OldCFrame
 		RemoveNotifications()
 		getgenv().SetHardWareShop_st = true
